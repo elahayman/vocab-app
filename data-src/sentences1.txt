@@ -1,0 +1,425 @@
+1|This book is ___ a boy and his dog.
+2|The picture hangs ___ the bed.
+3|We walked ___ the street to the park.
+4|The movie was full of ___ and fast cars.
+5|Please write your ___ on the letter.
+6|My little sister is ___ of the dark.
+7|We play outside ___ school.
+8|I eat lunch at one o'clock in the ___.
+9|Can you say that ___, please?
+10|What is your ___? I am twelve.
+11|We moved to this city five years ___.
+12|I ___ with you. It is a good idea.
+13|___ the children went to the party.
+14|I am ___ ready. Just one more minute.
+15|He lives ___ and has no roommates.
+16|There are 26 letters in the English ___.
+17|I have ___ finished my homework.
+18|I like pizza, and I ___ like pasta.
+19|She ___ brushes her teeth before bed.
+20|Dad was ___ when I broke the window.
+21|A dog is my favorite ___.
+22|Can I have ___ cookie, please?
+23|I know the ___ to this question!
+24|Do you have ___ questions?
+25|Is ___ home? I knocked on the door.
+26|I can't see ___ in the dark.
+27|A rainbow can ___ after the rain.
+28|My birthday is in ___, in the spring.
+29|The train will ___ at six o'clock.
+30|If you don't know, ___ the teacher.
+31|Summer vacation ends in ___.
+32|The leaves fall from the trees in ___.
+33|Go ___! I don't want to talk.
+34|I will be ___ in five minutes.
+35|The food smells ___. Don't eat it.
+36|I put my books in my school ___.
+37|The ___ is crying because it is hungry.
+38|What a ___ flower!
+39|I stayed home ___ I was sick.
+40|I go to ___ at nine o'clock.
+41|Wash your hands ___ you eat.
+42|The lesson will ___ at eight.
+43|The cat is hiding ___ the sofa.
+44|I don't ___ his story. It isn't true.
+45|Come and sit ___ me.
+46|She is my ___ friend.
+47|My English is getting ___ every day.
+48|The ball is ___ the two chairs.
+49|An elephant is a very ___ animal.
+50|Happy ___! You are ten today.
+51|Can I have a ___ of your cake?
+52|My cat is ___ like the night.
+53|The sky is ___ today.
+54|The teacher writes on the ___.
+55|Exercise is good for your ___.
+56|I am reading a very good ___.
+57|I am ___. There is nothing to do.
+58|This movie is so ___. I am falling asleep.
+59|I drink from a ___ of water.
+60|The present is in a big ___.
+61|The ___ and the girl are playing.
+62|I eat ___ with butter for breakfast.
+63|Be careful, you will ___ the glass!
+64|I eat ___ every morning before school.
+65|Please ___ your book to class tomorrow.
+66|My ___ is older than me.
+67|The bear has ___ fur.
+68|They want to ___ a new house.
+69|I take the ___ to school.
+70|I can't talk now. I am very ___.
+71|I want to ___ a new phone.
+72|I will ___ you tonight on the phone.
+73|Jerusalem is the ___ of Israel.
+74|My dad drives a red ___.
+75|Be ___ when you cross the road.
+76|The ___ says meow.
+77|Throw the ball and I will ___ it.
+78|There is a big shopping ___ in our town.
+79|Please sit on the ___.
+80|I want to ___ my clothes before the party.
+81|These shoes are ___. They cost only ten shekels.
+82|The ___ are playing in the park.
+83|I love hot ___ in winter.
+84|There are thirty students in my ___.
+85|Our ___ has a big window.
+86|Please ___ your room.
+87|The water is so ___ that I can see the fish.
+88|Please ___ the door. It is cold.
+89|The shop is ___ on Saturday.
+90|My mom drinks ___ every morning.
+91|It is very ___ outside. Wear a coat.
+92|What ___ is your bike? It's blue.
+93|___ here and look at this!
+94|I do my homework on the ___.
+95|That's a ___ jacket! I like it.
+96|Don't ___ your friend's homework.
+97|How much does this shirt ___?
+98|Can you ___ from one to ten?
+99|Israel is a small ___.
+100|Look both ways before you ___ the street.
+101|The baby started to ___.
+102|Use scissors to ___ the paper.
+103|My ___ takes me to school every day.
+104|It's ___ outside. Turn on the light.
+105|What is the ___ today? It's May fifth.
+106|They have one son and one ___.
+107|Today is a beautiful ___.
+108|___ is the last month of the year.
+109|I can't ___ which shirt to wear.
+110|Look up the word in the ___.
+111|My brother and I are very ___.
+112|This test is very ___.
+113|I am sick. I need to see a ___.
+114|My ___ barks at the cat.
+115|Someone is knocking at the ___.
+116|Please sit ___.
+117|Can you ___ a picture of a house?
+118|She is wearing a pretty ___.
+119|I want to ___ some water.
+120|My mom can ___ a car.
+121|Hang the clothes outside to ___.
+122|___ student gets a book.
+123|I wake up ___ in the morning.
+124|He whispered in my ___.
+125|This question is ___. I know the answer.
+126|I ___ breakfast at seven.
+127|Ten plus one is ___.
+128|I sent you an ___ this morning.
+129|The ___ of the movie was sad.
+130|I ___ playing football with my friends.
+131|We have ___ chairs for everybody.
+132|Knock before you ___ the room.
+133|We watch TV in the ___.
+134|I go swimming ___ Friday.
+135|___ in the class likes the new teacher.
+136|Thank you for ___!
+137|Can you give me an ___?
+138|___ me, where is the bus station?
+139|Running is good ___.
+140|This phone is too ___. I can't buy it.
+141|I need ___ time for the test.
+142|Close your ___ and go to sleep.
+143|Wash your ___ in the morning.
+144|It is a ___ that the earth is round.
+145|That's not ___! He got more cake than me.
+146|Be careful, don't ___ down the stairs.
+147|I love my ___.
+148|My school is not ___ from my house.
+149|He runs very ___.
+150|My ___ is a doctor.
+151|Pizza is my ___ food.
+152|___ is the second month of the year.
+153|I ___ happy today.
+154|I have a ___ friends in my class.
+155|Ten plus five is ___.
+156|He finished in ___ place.
+157|Twenty plus thirty is ___.
+158|We watched a funny ___ last night.
+159|I can't ___ my keys.
+160|I'm ___, thank you.
+161|Did you ___ your homework?
+162|The ___ keeps us warm.
+163|I was ___ in the race!
+164|I have ___ fingers on each hand.
+165|She gave me a red ___.
+166|Birds can ___.
+167|I am hungry. Is there any ___?
+168|I hurt my ___ playing football.
+169|Don't ___ your homework!
+170|Two plus two is ___.
+171|Ten plus four is ___.
+172|Twenty plus twenty is ___.
+173|Today the museum is ___. You don't have to pay.
+174|We don't have school on ___.
+175|Dana is my best ___.
+176|Please sit in the ___ of the class.
+177|My stomach is ___. I can't eat more.
+178|The joke was very ___.
+179|Let's play a ___.
+180|We have flowers in our ___.
+181|I need to ___ some milk from the shop.
+182|The ___ has long hair.
+183|I want to ___ my sister a present.
+184|I am ___ to see you.
+185|Can I have a ___ of water?
+186|I want to ___ to the beach.
+187|This cake is very ___.
+188|Say ___ to your friends.
+189|I am in sixth ___.
+190|You did a ___ job!
+191|Grass is ___.
+192|Plants ___ in the spring.
+193|___ the answer!
+194|She has long brown ___.
+195|I ate ___ of the pizza.
+196|Raise your ___ if you know the answer.
+197|___ your coat on the door.
+198|What will ___ tomorrow?
+199|I am so ___ today!
+200|This test is very ___.
+201|He wears a ___ on his head.
+202|I have a pain in my ___.
+203|Can you ___ the music?
+204|___! How are you?
+205|Can you ___ me with my homework?
+206|Come ___ and sit next to me.
+207|The mountain is very ___.
+208|Please ___ my bag for a minute.
+209|I go ___ after school.
+210|I ___ you feel better soon.
+211|It is very ___ today. Let's go to the beach.
+212|The movie is one ___ long.
+213|We live in a big ___.
+214|___ are you today?
+215|There are a ___ students in our school.
+216|I am ___. Let's eat!
+217|That's a good ___!
+218|Come here ___!
+219|This is a very ___ test.
+220|It is ___ to fly like a bird.
+221|Let's go ___. It's raining.
+222|I am ___ in music.
+223|This is an ___ book.
+224|The cat jumped ___ the box.
+225|I want to ___ you to my party.
+226|___ is the first month of the year.
+227|My dad has a new ___ at a bank.
+228|Summer starts in ___.
+229|We go to the beach in ___.
+230|I ___ finished my homework.
+231|Please ___ the door open.
+232|He is a nice ___.
+233|She is very ___ to animals.
+234|I ___ the answer!
+235|We need a ___ house for our big family.
+236|This is the ___ day of school.
+237|Hurry up! We are ___.
+238|I want to ___ English.
+239|I have the ___ money of everyone.
+240|Don't ___ without me!
+241|Turn ___ at the corner.
+242|I have ___ homework today than yesterday.
+243|Our English ___ starts at nine.
+244|I wrote a ___ to my grandmother.
+245|Don't ___. Tell me the truth.
+246|He had a long and happy ___.
+247|Turn on the ___, please.
+248|I ___ chocolate.
+249|___ to the teacher!
+250|I have a ___ brother.
+251|Where do you ___?
+252|___ at this picture!
+253|I am ___. Where is the station?
+254|I have a ___ of friends.
+255|I ___ my family.
+256|We eat ___ at one o'clock.
+257|Let's ___ a cake together.
+258|The ___ is wearing a suit.
+259|How ___ books do you have?
+260|___ is the third month of the year.
+261|My birthday is in ___.
+262|___ it will rain tomorrow.
+263|What does this word ___?
+264|What is the ___ of this word?
+265|Nice to ___ you!
+266|We have a ___ with the teacher.
+267|I have a good ___ for numbers.
+268|I sent him a ___ on my phone.
+269|The ball is in the ___ of the room.
+270|I drink a glass of ___ every morning.
+271|Ten ___ three is seven.
+272|Wait a ___!
+273|I made a ___ on the test.
+274|___ the eggs and sugar together.
+275|My ___ made me breakfast.
+276|Wait a ___, please.
+277|I go back to school on ___.
+278|I want to save my ___.
+279|There are twelve months in a ___.
+280|The ___ is bright tonight.
+281|Can I have ___ cake, please?
+282|Good ___! Did you sleep well?
+283|She is the ___ popular girl in class.
+284|My ___ is a teacher.
+285|Open your ___ and say "ah".
+286|Please ___ your chair.
+287|Let's watch a ___ tonight.
+288|I don't have ___ time.
+289|I like to listen to ___.
+290|What is your ___?
+291|My school is ___ my house.
+292|I ___ a pencil. Can I borrow one?
+293|Our ___ has a big dog.
+294|I ___ eat meat. I am a vegetarian.
+295|I have a ___ bike!
+296|Did you hear the ___ today?
+297|See you ___ week!
+298|What a ___ day!
+299|Good ___! Sleep well.
+300|Four plus five is ___.
+301|Ten plus nine is ___.
+302|Fifty plus forty is ___.
+303|___ came to the party. It was empty.
+304|Write the words in your ___.
+305|There is ___ in the box. It is empty.
+306|___ comes after October.
+307|Do it ___, not later!
+308|What is your phone ___?
+309|___ is the tenth month of the year.
+310|I ___ go to the beach in summer.
+311|My grandfather is very ___.
+312|I go to the gym ___ a week.
+313|I have ___ one sister.
+314|Please ___ the window.
+315|Where are the ___ children?
+316|Let's go ___ and play.
+317|The plane flew ___ the city.
+318|I have my ___ room.
+319|My ___ are coming to the meeting.
+320|Open your book to ___ ten.
+321|I need a piece of ___.
+322|This is the best ___ of the movie.
+323|It's ten ___ five.
+324|I need to ___ for the ticket.
+325|I write with a blue ___.
+326|I need a ___ to draw.
+327|Many ___ came to the party.
+328|___ it will rain later.
+329|He is a very nice ___.
+330|___ a card from the box.
+331|Look at this ___ of my family.
+332|Can I have a ___ of cake?
+333|This is a nice ___ to sit.
+334|What is your ___ for the weekend?
+335|Let's ___ football.
+336|Can I have some water, ___?
+337|The family is very ___. They have no money.
+338|Is it ___ to finish today?
+339|I ___ the piano every day.
+340|There is a ___ with my computer.
+341|We did a science ___ together.
+342|Every ___ in the class has a book.
+343|___ the door to open it.
+344|___ your bag on the table.
+345|Can I ask a ___?
+346|Let's have a ___ lunch.
+347|Please be ___ in the library.
+348|I listen to the ___ in the car.
+349|I like to ___ books.
+350|Are you ___? Let's go.
+351|Is this a ___ diamond?
+352|I ___ like this song.
+353|Stop! The light is ___.
+354|I can't ___ his name.
+355|I am tired. I need to ___.
+356|I need to ___ the book to the library.
+357|He is very ___. He has three houses.
+358|That's the ___ answer!
+359|Don't play on the ___.
+360|This is my ___.
+361|The ball is ___.
+362|What is the first ___ of the game?
+363|I ___ every morning.
+364|I am ___ because my dog is sick.
+365|We are in the ___ class.
+366|___ is the last day of the week in Israel.
+367|What did you ___?
+368|I go to ___ every day.
+369|Wait a ___!
+370|I ___ a bird in the tree.
+371|I will ___ you a message.
+372|Write a ___ with this word.
+373|School starts in ___.
+374|Three plus four is ___.
+375|Ten plus seven is ___.
+376|Sixty plus ten is ___.
+377|My hair is ___.
+378|Don't ___ at me!
+379|Can you ___ me your new phone?
+380|Please ___ the door.
+381|I stayed home because I was ___.
+382|Write your name on this ___ of the paper.
+383|The ___ says "Stop".
+384|This is a ___ question.
+385|I like to ___ songs.
+386|My ___ is two years older than me.
+387|Please ___ down.
+388|I have ___ cousins.
+389|Ten plus six is ___.
+390|Thirty plus thirty is ___.
+391|What ___ are your shoes?
+392|The ___ is blue today.
+393|I need to ___ eight hours every night.
+394|Today is a ___ day. It's my birthday!
+395|Flowers grow in the ___.
+396|We go to the beach in the ___.
+397|The turtle is very ___.
+398|A mouse is a ___ animal.
+399|She is very ___. She knows everything.
+400|She has a big ___ on her face.
+401|Can I have ___ water?
+402|___ is at the door.
+403|I want to tell you ___.
+404|I ___ go to the park after school.
+405|They have a ___ and a daughter.
+406|See you ___!
+407|This is my favorite ___.
+408|I'm ___ I'm late.
+409|Can you ___ English?
+410|How do you ___ your name?
+411|My favorite ___ is basketball.
+412|The game will ___ at five.
+413|Are you ___ here?
+414|Tell me a ___.
+415|Go ___ and then turn left.
+416|He is very ___. He can lift the table.
+417|I am a ___ at this school.
+418|___, the lights went out.
+419|The ___ is hot today.
+420|We go back to school on ___.
+421|We eat ___ at eight in the evening.
+422|Are you ___? Yes, I am.
+423|___ an umbrella with you.
+424|Can I ___ to you for a minute?
+425|My brother is very ___.

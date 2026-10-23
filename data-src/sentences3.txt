@@ -1,0 +1,433 @@
+851|I ___ see him at the gym, almost every day.
+852|This bread is ___. It came out of the oven ten minutes ago.
+853|The movie was so ___ that I couldn't sleep all night.
+854|Apples, bananas and oranges are my favorite ___.
+855|We laughed all day. The party was a lot of ___.
+856|We bought new ___ for the living room: a sofa, a table and two chairs.
+857|In the ___, I want to be a doctor.
+858|The kitchen smells bad. Please take out the ___.
+859|The car stopped because it had no ___.
+860|In ___, people in Israel like hot weather.
+861|I like most sports, but ___ I prefer football.
+862|When will you ___ from your trip? Next Monday.
+863|This is our stop. Let's ___ the bus here.
+864|The bus is here! Quick, ___ the bus before it leaves.
+865|The car is on fire! ___ the car now!
+866|These old toys take up too much room. I want to ___ them.
+867|I ___ at seven every morning and go to school.
+868|It's hard, but don't ___. Try again!
+869|I'm angry. Please ___ and leave me alone.
+870|We don't want to stay home. Let's ___ tonight to a movie.
+871|Many religions believe in one ___.
+872|The ___ makes the laws of the country.
+873|English ___ is hard: past tense, future tense, and more.
+874|The ___ shows that sales went up every month.
+875|Black and white make ___.
+876|The apple fell from the tree to the ___.
+877|The car is expensive. On the one hand, it's fast. ___, it uses a lot of gas.
+878|The music is so loud that I can ___ hear you.
+879|I love cats, but I ___ spiders.
+880|I have a ___. Can you give me something for the pain?
+881|Smoking is bad for your ___.
+882|Vegetables are ___ food.
+883|My ___ beats fast when I run.
+884|I can't stand the ___ of the summer sun.
+885|What is your ___? I am 1.60 meters tall.
+886|This bag is very ___. I can't lift it.
+887|Let's ___ the present under the bed so he won't find it.
+888|In ___ class we learn about the past.
+889|He ___ the ball very hard and it flew over the fence.
+890|School is closed. It's a ___.
+891|Always tell the truth. Be ___.
+892|The food smells ___. I'm not eating it!
+893|He broke his leg and is now in the ___.
+894|On our trip we slept at a ___ near the beach.
+895|It was very hard. ___, we finished on time.
+896|Their house is ___. It has twelve rooms!
+897|I fell, and my leg ___.
+898|She and her ___ have been married for ten years.
+899|"Where is Dan?" "I have ___."
+900|Can you ___ the man in the picture? Who is he?
+901|Show me your ___ card, please.
+902|He is ___ in bed with a fever.
+903|Close your eyes and ___ you can fly.
+904|I read every day to ___ my English.
+905|The price of the hotel ___ breakfast.
+906|Prices ___ every year. Everything is more expensive.
+907|"Was it a good movie?" "Yes, ___ it was!"
+908|She lives alone and does everything by herself. She is very ___.
+909|Every ___ in the class has a different talent.
+910|For more ___, visit our website.
+911|I like many animals, ___ dogs and cats.
+912|I'll drink tea ___ coffee today.
+913|She is very ___. She learns everything quickly.
+914|Ben Gurion is an ___ airport. Flights go all over the world.
+915|I have a job ___ tomorrow. I hope they hire me.
+916|Let me ___ my friend Dana to you.
+917|Who ___ the telephone?
+918|Thanks for the ___ to your party!
+919|Many students were ___ in the school play.
+920|They live on a small ___ in the middle of the sea.
+921|Pollution is an important ___ in our city.
+922|Each ___ on the menu costs ten shekels.
+923|Hanukkah is a ___ holiday.
+924|We are going to the movies. Do you want to ___ us?
+925|He told a funny ___ and everyone laughed.
+926|I can't open the door. I lost my ___.
+927|Cut the bread with a ___.
+928|Read the ___ on the bottle before you take the medicine.
+929|An old ___ helped me cross the street.
+930|The plane will ___ soon. Look at the airport!
+931|It was so funny that we started to ___.
+932|___ the baby on the bed gently.
+933|She will ___ the team as captain.
+934|Hard work can ___ success.
+935|He is the ___ of the group. Everyone follows him.
+936|You must read ___ one book this month, maybe more.
+937|Don't carry that alone. ___ me help you.
+938|I borrowed a book from the school ___.
+939|Look at those clouds. It's ___ to rain.
+940|Please stand in ___ and wait your turn.
+941|There is a speed ___ of 50 on this road.
+942|We have ___ time, so we must hurry.
+943|Click on the ___ to open the website.
+944|I speak ___ English, but not much.
+945|The truck came to ___ the boxes.
+946|We buy fresh vegetables at the ___ market in our town.
+947|___ the door when you leave the house.
+948|___, there was a king who lived in a castle.
+949|Wait here. ___, he will be back.
+950|You can stay ___ you are quiet.
+951|I ___ live there. I moved last year.
+952|Can you ___ my cat while I'm on vacation?
+953|I ___ my keys. Have you seen them?
+954|I ___ the summer vacation. Only two weeks left!
+955|You ___ your mother. You have the same eyes.
+956|If you don't know the word, ___ in the dictionary.
+957|Hold your keys tightly. Don't ___ them!
+958|The music is too ___. Please turn it down.
+959|The table is too ___. I have to bend down.
+960|You won the prize! You are so ___!
+961|This ___ makes coffee in one minute.
+962|I'm reading a fashion ___.
+963|Did the postman bring any ___ today?
+964|What is the ___ idea of the story?
+965|We ___ eat vegetables, not candy.
+966|He was so ___ that he shouted at everyone.
+967|It was hard, but I ___ to finish on time.
+968|Look at the ___ to find the way.
+969|Put a ___ next to the right answer.
+970|We buy fruit and vegetables at the ___.
+971|Will you ___ me? Yes, I will be your wife!
+972|We watched the football ___ on TV.
+973|What ___ is this shirt made of? Cotton.
+974|In ___ class we learn numbers and fractions.
+975|___ what you say, I'm going to the party.
+976|The ___ speed on this road is 90. Don't drive faster.
+977|Breakfast is the most important ___ of the day.
+978|I'm a vegetarian. I don't eat ___.
+979|Every ___ of the team was at the game.
+980|It's a secret. Don't ___ it to anyone!
+981|Take an umbrella. It ___ rain later.
+982|There are a ___ people in this city.
+983|What's on your ___? You look worried.
+984|"I'm sorry I'm late." "___, it's not important."
+985|I ___ waiting. Take your time.
+986|"Is this your book?" "Yes, it's ___."
+987|The ___ age to drive is 17.
+988|This is a ___ house with big windows and new technology.
+989|___ people are buying electric cars.
+990|It took ___ two hours, maybe a little more.
+991|He is ___. He prays in a mosque.
+992|We climbed the ___. It was very high.
+993|We visited a ___ full of old paintings.
+994|You ___ wear a seat belt in the car. It's the law.
+995|The whole ___ celebrated Independence Day.
+996|I love ___: trees, flowers and animals.
+997|Your room is very ___. Everything is in its place.
+998|Is it ___ to bring food, or will there be food there?
+999|I like ___ tea ___ coffee. I only drink water.
+1000|I am ___ about the test tomorrow.
+1001|I read the ___ every morning to know what's happening.
+1002|Don't make ___! The baby is sleeping.
+1003|___ of my friends came. Nobody came.
+1004|It's ___ to feel sad sometimes.
+1005|We drove ___ to the Galilee.
+1006|___ is he smart, he is also kind.
+1007|Write a short ___ to your teacher.
+1008|Did you ___ the new sign on the door?
+1009|___ people came, maybe twenty.
+1010|What is that strange ___ on the table?
+1011|When did the accident ___? Yesterday at noon.
+1012|That's ___. He always comes on time, but today he is late.
+1013|They made me an ___ I couldn't refuse.
+1014|My mom works in an ___ in the city.
+1015|Cook the vegetables in olive ___.
+1016|___, he was late. He is always late!
+1017|Come here ___! It's an emergency.
+1018|The cat jumped ___ the table.
+1019|Who knows how to ___ this machine?
+1020|He needs an ___ on his knee.
+1021|What is your ___ about the new school?
+1022|___, it's the best movie of the year.
+1023|This job is a great ___ for you.
+1024|Black is the ___ of white.
+1025|It was just an ___ day. Nothing special happened.
+1026|Put the books in ___, from A to Z.
+1027|I study hard ___ pass the test.
+1028|You ___ apologize to your sister.
+1029|"Is this your house?" "Yes, it's ___."
+1030|Let's ___ a surprise party for Mom.
+1031|This is the ___ painting, not a copy.
+1032|He lives ___. He likes to be alone.
+1033|I bought a new ___ of shoes.
+1034|Let's play in the ___ near our house.
+1035|It's ___ my fault, but not only mine.
+1036|I want to ___ in the school play.
+1037|Is there a ___ book you are looking for?
+1038|I like all sports, ___ football.
+1039|She is my ___ in the science project.
+1040|Let's have a birthday ___!
+1041|The bus driver waited for the last ___.
+1042|___ me the salt, please.
+1043|Nobody is ___. Everyone makes mistakes.
+1044|Take a ___ of us with your phone.
+1045|The meeting will ___ tomorrow in room 5.
+1046|We have ___ time. There is no need to hurry.
+1047|Two ___ two is four.
+1048|From my ___, the plan is a good one.
+1049|Someone stole my bike! Call the ___!
+1050|She is very ___. Everyone wants to be her friend.
+1051|What ___ do you play on the team? Goalkeeper.
+1052|The king had a lot of ___.
+1053|This car has a very ___ engine.
+1054|Can you ___ the weather for tomorrow?
+1055|I ___ tea to coffee.
+1056|She gave me a birthday ___.
+1057|___, I am busy. Call me later.
+1058|There is a lot of ___ at school before exams.
+1059|The ___ owner of the house lived here before us.
+1060|What is the ___ of this shirt? 50 shekels.
+1061|Can you ___ this page for me? I need a paper copy.
+1062|This is a ___ party. Only friends can come.
+1063|She won the first ___ in the competition.
+1064|It will ___ rain tomorrow, but I'm not sure.
+1065|Learning a language is a long ___.
+1066|My favorite TV ___ is on at eight.
+1067|Wear ___ shoes for the hike, not sandals.
+1068|Wear a helmet to ___ your head.
+1069|You won! I'm very ___ of you!
+1070|You say he took it. Can you ___ it?
+1071|The school will ___ books for every student.
+1072|This is a ___ park. Everyone can use it.
+1073|What is the ___ of this trip? To learn about history.
+1074|He didn't fall by accident. He did it ___!
+1075|It's a ___ past five: 5:15.
+1076|It's ___ cold today. Take a jacket.
+1077|Who won the ___? The fastest runner.
+1078|The ___ goes from Tel Aviv to Haifa.
+1079|Take an umbrella. There is a lot of ___ today.
+1080|___ your hand if you know the answer.
+1081|It's late. I'd ___ go home now.
+1082|I'll take the bus ___ walk in the rain.
+1083|I ___ stay home than go out in the rain.
+1084|I'm too short. I can't ___ the top shelf.
+1085|I didn't ___ it was so late. It's already midnight!
+1086|What's the ___ you were late?
+1087|Did you ___ my letter?
+1088|In ___ years, phones have changed a lot.
+1089|You changed so much. I didn't ___ you!
+1090|He broke the world ___ in running.
+1091|Running is part of my ___ morning routine.
+1092|I can ___ to your story. The same thing happened to me.
+1093|There is a close ___ between the two countries.
+1094|Sit down, close your eyes and ___.
+1095|Judaism is a ___.
+1096|He is very ___. He prays every day.
+1097|___ me to call Grandma tonight. I always forget.
+1098|I didn't hear you. Can you ___ that?
+1099|Please ___ to my email by tomorrow.
+1100|Write a ___ about the school trip.
+1101|I have a ___: can you help me with my homework?
+1102|You should ___ your parents and teachers.
+1103|Who is ___ for this mess?
+1104|Feeding the dog is my ___.
+1105|I ate one piece and my brother ate ___ of the cake.
+1106|What was the ___ of the game? We won 3 to 1.
+1107|The road closed ___ the storm.
+1108|We eat chicken with ___ for dinner.
+1109|Let's ___ our bikes in the park.
+1110|She has a gold ___ on her finger.
+1111|The sun will ___ at six in the morning.
+1112|Don't take the ___. It's too dangerous.
+1113|We swam in the ___ near the village.
+1114|What is his ___ in the movie? He plays the hero.
+1115|Is it ___ to swim here? Are there sharks?
+1116|The house is for ___. Do you want to buy it?
+1117|These shoes are ___. Half price today!
+1118|The soup needs more ___.
+1119|Let's ___ money for a new bike.
+1120|What's your ___ today? Math at eight, English at nine.
+1121|In ___ class we do experiments.
+1122|What's the ___? We are winning 2 to 0.
+1123|We swam in the ___ and played on the beach.
+1124|The police ___ the house for clues.
+1125|Summer is my favorite ___ of the year.
+1126|Is this ___ free? Can I sit here?
+1127|Can you keep a ___? Don't tell anyone.
+1128|You ___ tired. Did you sleep well?
+1129|We ___ fruit at the market.
+1130|Are you joking, or are you ___?
+1131|The waiter came to ___ us our food.
+1132|The ___ in this restaurant is great. The waiters are very nice.
+1133|Please ___ the table for dinner.
+1134|Let's ___ the tent before it gets dark.
+1135|I have ___ friends in my class, maybe five or six.
+1136|What ___ is it? It's round, like a circle.
+1137|I am wearing a white ___ and blue jeans.
+1138|I bought new ___ for running.
+1139|Let's go to the ___ and buy some milk.
+1140|We need new clothes. Let's ___ at the mall.
+1141|You ___ go to bed early. You have a test tomorrow.
+1142|Don't ___! Put the gun down!
+1143|The room was ___. Nobody said a word.
+1144|There was ___ in the room. Nobody spoke.
+1145|Don't be ___. That's a stupid idea.
+1146|She has a ___ ring, not gold.
+1147|We have ___ shoes. Mine are just a little bigger.
+1148|I've lived here ___ 2015.
+1149|She is a famous ___. Her songs are on the radio.
+1150|There is only a ___ apple left. Just one.
+1151|This is a great web ___. I visit it every day.
+1152|What's that ___? Is someone cooking?
+1153|I see ___! Is there a fire?
+1154|Speak loudly ___ everyone can hear you.
+1155|Facebook is a ___ network.
+1156|We live in a modern ___ with many rules.
+1157|The bed is very ___ and comfortable.
+1158|Can you ___ this math problem?
+1159|What ___ of music do you like?
+1160|I'm ___ tired, but not very.
+1161|What's that ___? Is it a car?
+1162|We drove ___ to Eilat.
+1163|There is no ___ in the car for another bag.
+1164|Give me a ___ example, not a general one.
+1165|What is the ___ of the car? 100 km per hour.
+1166|I ___ too much time on my phone.
+1167|___ the rain, we went out to play.
+1168|The singer is on the ___ now.
+1169|The ___ of this school is very high.
+1170|Look at that bright ___ in the sky!
+1171|Texas is a big ___ in the USA.
+1172|The president made a ___ to the press.
+1173|The train ___ is near my house.
+1174|Take one ___ forward.
+1175|___ the picture on the wall with tape.
+1176|Can you ___ with me for one more day?
+1177|Let's go to the ___ and buy new shoes.
+1178|What a ___ dream! There was a purple elephant in it.
+1179|The workers are on ___. They don't work today.
+1180|I ___ for two hours every day before a test.
+1181|Put all your ___ in the bag.
+1182|That was a ___ idea. Why did you do it?
+1183|What's your favorite school ___? Math.
+1184|I hope you ___ in your new job.
+1185|I ___ we go home now. It's late.
+1186|Thanks for the ___. It's a great idea.
+1187|He is wearing a ___ and tie to the wedding.
+1188|My parents always ___ me, no matter what.
+1189|I ___ you're right. Let's do it your way.
+1190|___ the door is locked before you go.
+1191|Happy birthday! What a ___!
+1192|This cake is too ___. It has too much sugar.
+1193|___ the light when you leave the room.
+1194|___ the TV. I want to watch the news.
+1195|I like the ___ of this soup.
+1196|Which ___ do you play for? Maccabi.
+1197|___ changes our lives: phones, computers, robots.
+1198|She is a ___. She is fifteen.
+1199|I ___ forget things when I'm tired.
+1200|What does this ___ mean in science?
+1201|The food was ___. Nobody liked it.
+1202|Send me a ___ when you get home.
+1203|Look ___! There's a bird on the roof.
+1204|It rained. ___, we stayed home.
+1205|This book is very ___. It has 900 pages.
+1206|He is very ___. He needs to eat more.
+1207|That's a nice ___. Thank you for thinking of me.
+1208|We walked ___ the park to get home.
+1209|Don't ___ the ball inside the house!
+1210|Don't ___ the paper. Put it in the recycling bin.
+1211|A ___ people came to the concert.
+1212|Do you have a ___ for the concert?
+1213|Keep your room ___.
+1214|He talks ___. He never stops.
+1215|Don't be late. Be ___!
+1216|We can't talk and drive ___.
+1217|What's the ___ of the book? "Harry Potter".
+1218|A hammer is a ___.
+1219|He climbed to the ___ of the mountain.
+1220|What's the ___ of today's lesson? Animals.
+1221|What is the ___? 10 plus 20 plus 30 is 60.
+1222|Don't ___ the paint. It's still wet!
+1223|Keep ___ me. Call me every week.
+1224|We took a ___ of the old city.
+1225|He walked ___ the door and opened it.
+1226|Lighting candles on Friday is a family ___.
+1227|There is a lot of ___ on the road today.
+1228|We took the ___ to Tel Aviv.
+1229|Can you ___ this sentence into Hebrew?
+1230|The ___ of this word into Hebrew is wrong.
+1231|Buses and trains are public ___.
+1232|Put the empty bottles in the ___.
+1233|I love to ___ to new countries.
+1234|The pirates found ___ in the cave.
+1235|He ___ me like a friend.
+1236|He played a ___ on me. It was a joke.
+1237|I'm in ___. I broke Mom's favorite cup.
+1238|You can ___ me. I won't tell anyone.
+1239|I like this ___. Can you sing it again?
+1240|What ___ of dog is it?
+1241|That's an ___ shirt. I don't like it.
+1242|We finished ___ 5 in the book.
+1243|I'll go to the beach ___ it rains.
+1244|It's ___ you. You decide.
+1245|I ___ live in Haifa, but now I live in Tel Aviv.
+1246|This app is very ___. It helps me a lot.
+1247|He was late, as ___.
+1248|___, he was late again.
+1249|Eat your ___! Carrots are good for you.
+1250|What a beautiful ___ from the top of the mountain!
+1251|My grandparents live in a small ___.
+1252|Come and ___ us next week!
+1253|She has a beautiful ___. She should be a singer.
+1254|I ___ at seven every morning.
+1255|It's ___ today. You don't need a coat.
+1256|I ___ you, don't go there. It's dangerous.
+1257|Don't ___ water. Close the tap.
+1258|Look at the big ___ in the sea!
+1259|___, what time is it?
+1260|I'm ___ to school now. I'll be there soon.
+1261|The ___ is nice today. Let's go out.
+1262|What is your ___? I weigh 40 kilos.
+1263|The sun sets in the ___.
+1264|Do ___ you want. I don't care.
+1265|___ one do you want, the red or the blue?
+1266|___, it was a good year.
+1267|I ate the ___ pizza by myself.
+1268|___ bag is this? Is it yours?
+1269|The river is very ___. It's hard to swim across.
+1270|His ___ is a teacher.
+1271|I want to ___ the game!
+1272|The ___ is strong today.
+1273|I'll be back ___ an hour.
+1274|I ___ where he is. He's not answering.
+1275|The table is made of ___.
+1276|He's not happy. ___, he's sad.
+1277|It's ___ the money. It's really good.
+1278|I'm ___ the test tomorrow.
+1279|Don't ___! Everything will be OK.
+1280|Is he here ___? No, not yet.
+1281|I'm ___ ready. Give me five more minutes.
+1282|Is this book ___? Yes, it's mine.
+1283|The temperature is ___ degrees. It's freezing.

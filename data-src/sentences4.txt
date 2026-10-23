@@ -1,0 +1,421 @@
+1284|I need to ___ the game before I can play it.
+1285|I want to ___ my photos to the cloud.
+1286|My phone needs an ___. A new version is ready.
+1287|I want to ___ my phone to a newer model.
+1288|You must ___ the app on your phone first.
+1289|Don't tell anyone your ___.
+1290|Enter your ___ and password to sign in.
+1291|Go to ___ to change the language of the app.
+1292|You must ___ to see your messages.
+1293|Don't forget to ___ when you finish on a shared computer.
+1294|Please ___ to my YouTube channel!
+1295|She has a million ___ on Instagram.
+1296|Can you ___ this video with your friends?
+1297|Write a ___ under the video.
+1298|She wrote a new ___ on her blog.
+1299|I got a ___ on my phone: "You have a new message".
+1300|This phone has a cool new ___: it can translate.
+1301|A phone and a tablet are each a ___.
+1302|The phone ___ is broken.
+1303|I type on the ___.
+1304|My phone's ___ is almost empty.
+1305|I need to ___ my phone. The battery is low.
+1306|This channel has great ___ for kids.
+1307|Which YouTube ___ do you watch?
+1308|You can ___ the game live online.
+1309|I read a ___ of the movie before I watched it.
+1310|This app has a five-star ___.
+1311|Short videos are a big ___ right now.
+1312|The video went ___. Millions of people saw it.
+1313|Close the door. I need some ___.
+1314|The app collects ___ about its users.
+1315|Only teachers have ___ to this room.
+1316|I like to ___ the internet for new games.
+1317|This website is ___ at school. I can't open it.
+1318|There is a ___ sign: "Danger!"
+1319|The computer shows an ___. It's not working.
+1320|I'm on ___ 10 in the game.
+1321|You get a ___ for every right answer.
+1322|This puzzle is a real ___.
+1323|Getting into the team was a big ___ for me.
+1324|Reading is an important ___.
+1325|In the game, you can choose a sword or another ___.
+1326|The hero fought against his ___.
+1327|Our team will ___ them!
+1328|Animals need water to ___.
+1329|The prisoner tried to ___ from jail.
+1330|The dog started to ___ the man.
+1331|The soldiers will ___ the city.
+1332|Win three games to ___ a new level.
+1333|Your ___ is to find the treasure.
+1334|My ___ is to read twenty books this year.
+1335|My ___ in the final was very strong.
+1336|Our team won the chess ___.
+1337|The ___ told the players to run faster.
+1338|It was raining, but we went out ___.
+1339|___, the movie is about friendship.
+1340|___, he's tired. He didn't sleep all night.
+1341|___? You won the lottery?
+1342|I was ___ shaking with fear.
+1343|I ___ forgot about the test!
+1344|That concert was ___!
+1345|The view from the top is ___!
+1346|That's ___. Why is the cat wearing a hat?
+1347|That noise is really ___. Please stop it!
+1348|I fell in front of the whole class. I was so ___.
+1349|I don't understand the question. I'm ___.
+1350|I'm ___. What's in the box?
+1351|He was ___ because his friend got a new bike.
+1352|I'm ___ for your help. Thank you!
+1353|She was ___ before the big test.
+1354|I studied a lot, so I'm ___ about the test.
+1355|I tried ten times and failed. I'm so ___!
+1356|I was ___ when I found my lost dog.
+1357|I was ___ by her beautiful drawing.
+1358|He was ___ of what he did.
+1359|Dad was ___ when he saw the broken car.
+1360|She was ___ with the present.
+1361|I'm in a good ___ today.
+1362|I have a strange ___ that something will happen.
+1363|She has a great ___. She's always positive.
+1364|Biting your nails is a bad ___.
+1365|You're making great ___ in English!
+1366|Turn off the TV so you can ___ on your homework.
+1367|Please ___ to the teacher.
+1368|It's hard to ___ when it's noisy.
+1369|I need to ___ these words for the test.
+1370|If you work hard, you will ___ your goals.
+1371|He made an ___ to climb the mountain, but failed.
+1372|Try to ___ junk food.
+1373|I ___ my grandfather. He is very brave.
+1374|My parents don't ___ me to stay out late.
+1375|The principal will ___ the winners tomorrow.
+1376|Don't ___ your sister!
+1377|I really ___ your help.
+1378|As winter ___, it gets colder.
+1379|Flowers ___ bees.
+1380|Take a deep breath and ___ slowly.
+1381|Use a calculator to ___ the total.
+1382|The police managed to ___ the thief.
+1383|He ___ that he saw a UFO.
+1384|I tried to ___ my mom to buy me a dog.
+1385|The storm caused a lot of ___.
+1386|He didn't ___ that he broke the window. He said "Yes, I did it."
+1387|The fire ___ the whole forest.
+1388|Scientists want to ___ a new medicine.
+1389|I ___ with you. I think you're wrong.
+1390|I ___ money by babysitting.
+1391|The school was ___ in 1950.
+1392|Can you ___ how many people are here?
+1393|Do ghosts really ___?
+1394|The bomb could ___ at any moment.
+1395|___ your clothes and put them in the closet.
+1396|Let's ___ everyone in the living room.
+1397|The company wants to ___ ten new workers.
+1398|Just ___ him. He's trying to make you angry.
+1399|Friends can ___ the way you think.
+1400|Please ___ me if you are coming.
+1401|He ___ on paying for dinner.
+1402|The police will ___ the crime.
+1403|___ the room before you buy a new carpet.
+1404|Soldiers must ___ orders.
+1405|Scientists ___ animals in nature.
+1406|You need to ___ permission first.
+1407|I tried to ___ him to come with us.
+1408|Let's ___ dinner together.
+1409|He likes to ___ he's a superhero.
+1410|Wearing a helmet can ___ injuries.
+1411|I ___ I will call you tomorrow.
+1412|They will ___ her new book next month.
+1413|My parents didn't ___ me for breaking the cup.
+1414|I want to ___ the team.
+1415|I ___ this book. You will love it.
+1416|Please ___ your speed. You're driving too fast.
+1417|I ___ to eat vegetables.
+1418|I ___ what I said. I'm sorry.
+1419|You can always ___ me.
+1420|Please ___ your shoes before you come in.
+1421|We need to ___ the broken window.
+1422|The firefighters came to ___ the cat from the tree.
+1423|The magician never wants to ___ his secrets.
+1424|Nothing can ___ him. He always wants more.
+1425|She started to ___ when she saw the spider.
+1426|Please ___ one answer.
+1427|___ the bottle before you open it.
+1428|The fire started to ___ quickly.
+1429|Somebody tried to ___ my bike.
+1430|He had to ___ to finish the race.
+1431|Many people ___ from hunger.
+1432|The police ___ the building.
+1433|It's hard to ___ this big pill.
+1434|Don't ___ the paper!
+1435|He tried to ___ me with a knife.
+1436|Who did you ___ for in the election?
+1437|We like to ___ around the old city without a map.
+1438|Make sure the information is ___.
+1439|We visited ___ ruins from 2,000 years ago.
+1440|Please give a ___ answer. We don't have much time.
+1441|She is ___ of doing great things.
+1442|Don't be ___ to animals.
+1443|This new machine is very ___. It saves time and energy.
+1444|I read the ___ book in one day.
+1445|Water is ___ for life.
+1446|His face looks ___. Have we met before?
+1447|The ___ lion attacked the zebra.
+1448|Be careful, the glass is ___.
+1449|She is very ___. She always shares her food.
+1450|Be ___ with the baby.
+1451|He felt ___ about lying to his mother.
+1452|Smoking is ___ to your health.
+1453|Even though he is famous, he is very ___.
+1454|It's ___ to drive without a license.
+1455|The judge said he was ___. He didn't do it.
+1456|It's ___ to drive at 17 in Israel.
+1457|My dog is very ___. He always stays by my side.
+1458|A ___ man knocked on the door. Nobody knew who he was.
+1459|The street is very ___. Only one car can pass.
+1460|The answer was ___. Everyone knew it.
+1461|Be ___. The doctor will see you soon.
+1462|We had a ___ evening together.
+1463|This ring is very ___ to me. It was my grandmother's.
+1464|This bird is very ___. There are only a few left.
+1465|My car is old but ___. It always starts.
+1466|The sea is very ___ today. Big waves!
+1467|Don't be ___. Share with your brother.
+1468|She cries easily. She is very ___.
+1469|There was a ___ storm last night.
+1470|The baby's skin is very ___.
+1471|He is so ___. He never changes his mind.
+1472|This movie is not ___ for young children.
+1473|The ant is ___.
+1474|Every person is ___.
+1475|This painting is very ___. It costs a million dollars.
+1476|We sell ___ kinds of fruit.
+1477|This movie is too ___ for kids.
+1478|He is very ___. He owns three companies.
+1479|We saw ___ animals in Africa.
+1480|My grandfather is very ___. He always gives good advice.
+1481|Our trip to the desert was a great ___.
+1482|The ___ clapped at the end of the show.
+1483|One ___ of sport is good health.
+1484|Our ___ helps each other.
+1485|She won the singing ___.
+1486|If you don't study, there will be a ___.
+1487|It takes ___ to say you're sorry.
+1488|The country is in an economic ___.
+1489|It was a hard ___ to make.
+1490|The earthquake was a terrible ___.
+1491|The police found ___ that he did it.
+1492|The plan was a total ___.
+1493|Everyone deserves ___.
+1494|Thank you for the birthday ___!
+1495|It's an ___ to meet you.
+1496|The ___ to the North took five hours.
+1497|Reading books gives you ___.
+1498|You must obey the ___.
+1499|The ___ of students voted yes.
+1500|What's the best ___ to learn English?
+1501|The police couldn't solve the ___.
+1502|We live in a quiet ___.
+1503|We had to overcome a big ___: the language.
+1504|Can you see the ___ in these numbers? 2, 4, 6, 8...
+1505|You need ___ to leave the class.
+1506|Cars cause air ___.
+1507|The ___ of Israel is about ten million.
+1508|Many families live in ___.
+1509|The ___ of this product is excellent.
+1510|We need a large ___ of water.
+1511|Scientists did ___ on the new medicine.
+1512|Water is an important natural ___.
+1513|There's a ___ that the teacher is leaving.
+1514|The family found ___ from the storm.
+1515|We found a ___ to the problem.
+1516|What is the ___ of this information?
+1517|He has great physical ___.
+1518|The party was a big ___.
+1519|We did a ___ of all the students.
+1520|He was a ___ of the crime.
+1521|Our team celebrated the ___.
+1522|He made his ___ from oil.
+1523|Fear of the dark is my ___.
+1524|In his ___, he played football.
+1525|They had to ___ their car in the snow.
+1526|Fruit is ___ in summer.
+1527|I will ___ you to the doctor.
+1528|She worked hard to ___ all her goals.
+1529|Don't ___ me of lying!
+1530|He refused to ___ his mistake.
+1531|You will ___ new skills.
+1532|Animals ___ to their environment.
+1533|The food was ___, but not great.
+1534|___ the seat so you can see.
+1535|She is an ___ for children's rights.
+1536|The dog is ___. It bites.
+1537|We need to ___ our plans.
+1538|His answer was ___. I didn't know what he meant.
+1539|She is very ___. She wants to be president.
+1540|Let's ___ the results of the test.
+1541|We ___ a lot of traffic today.
+1542|It was ___ that she was tired.
+1543|He is very ___. He thinks he's better than everyone.
+1544|I ___ you're hungry after the trip.
+1545|Can I ___ you with your bags?
+1546|She worked hard to ___ her goals.
+1547|The police have the ___ to arrest people.
+1548|The ___ king helped the poor.
+1549|Exercise is ___ to your health.
+1550|The judge must not have any ___.
+1551|He made a ___ decision.
+1552|The river is the ___ between the two countries.
+1553|The fighting will ___ at midnight.
+1554|Be ___ on the icy road.
+1555|His story was clear and ___.
+1556|The old building may ___.
+1557|He didn't ___ the crime.
+1558|The company will ___ you for the damage.
+1559|Twenty teams will ___ for the prize.
+1560|I can't ___ this difficult text.
+1561|He tried to ___ the truth.
+1562|This is a difficult ___ to understand.
+1563|We can ___ that the plan worked.
+1564|There is a ___ between the two countries.
+1565|The team will ___ eleven players.
+1566|There was a ___ noise all night.
+1567|We visited a museum of ___ art.
+1568|His actions ___ his words.
+1569|Everyone should ___ to the project.
+1570|The new law caused a lot of ___.
+1571|This is a ___ moment in the game.
+1572|The number of students began to ___.
+1573|It was a ___ choice, not an accident.
+1574|The teacher will ___ how to do the experiment.
+1575|Many English words ___ from Latin.
+1576|We need to ___ the cause of the problem.
+1577|She will ___ her life to helping others.
+1578|The pain will ___ over time.
+1579|There are two ___ groups.
+1580|Can you ___ between the twins?
+1581|Our school has a ___ group of students.
+1582|The lion is the ___ animal in the group.
+1583|She was ___ to start her new job.
+1584|We need to ___ all the mistakes.
+1585|The sun began to ___ from behind the clouds.
+1586|The teacher wants to ___ the importance of reading.
+1587|This app will ___ you to learn faster.
+1588|Good lighting can ___ the photo.
+1589|The teacher will ___ your work.
+1590|It was ___ that he was lying.
+1591|Animals ___ over millions of years.
+1592|Don't ___! It wasn't that big.
+1593|Don't ___ the speed limit.
+1594|We will not ___ anyone from the party.
+1595|The company wants to ___ to other countries.
+1596|Don't ___ your workers.
+1597|The newspaper will ___ the truth.
+1598|Is this plan ___? Can we really do it?
+1599|My schedule is ___. I can meet any time.
+1600|She is ___ in three languages.
+1601|He is a ___ visitor here. He comes every week.
+1602|This is a ___ rule of math.
+1603|This is a ___ diamond, not a fake.
+1604|The king will ___ your wish.
+1605|Don't ___ to ask questions.
+1606|The two groups were very ___ to each other.
+1607|The scientist tested his ___.
+1608|The two pictures are ___. I can't find any difference.
+1609|Can you ___ your point with an example?
+1610|The ___ desert covered the land.
+1611|Phones have a big ___ on our lives.
+1612|What do you ___ by that?
+1613|The signs ___ where the exit is.
+1614|Getting older is ___.
+1615|This product is ___ to the other one.
+1616|Many animals ___ the forest.
+1617|My ___ reaction was fear.
+1618|This is an ___ idea that nobody had before.
+1619|This book gave me new ___ into history.
+1620|Her speech will ___ young people.
+1621|The heat was ___.
+1622|How do you ___ this poem?
+1623|Please don't ___ me while I'm talking.
+1624|You can't ___ violence.
+1625|She is ___ on sports.
+1626|The plants died from a ___ of water.
+1627|It's hard to ___ a healthy diet.
+1628|There was a ___ fire in the forest.
+1629|He is very ___ for his age.
+1630|It was a ___ problem. Don't worry about it.
+1631|He is very ___ about his success.
+1632|Good teachers ___ their students.
+1633|Don't ___ your homework.
+1634|I have no ___ of what he means.
+1635|There are ___ reasons to learn English.
+1636|A judge must be ___.
+1637|The meaning of the poem is ___.
+1638|The soldiers will ___ the city.
+1639|Many people ___ the new law.
+1640|What was the ___ of the meeting?
+1641|She managed to ___ her fear.
+1642|I want to ___ in the competition.
+1643|How do you ___ the world?
+1644|If the pain should ___, see a doctor.
+1645|From my ___, it's a good plan.
+1646|Rainbows are a natural ___.
+1647|I need the ___ time. Not "around five".
+1648|We must ___ nature for our children.
+1649|You need ___ experience for this job.
+1650|The book had a ___ effect on me.
+1651|The new law will ___ smoking in parks.
+1652|She is a ___ scientist.
+1653|The company wants to ___ its new product.
+1654|I want to ___ a career in science.
+1655|Let's make a ___ decision, not an emotional one.
+1656|He is a ___ driver. He drives too fast.
+1657|We need to ___ the wall.
+1658|They will ___ his offer.
+1659|She was ___ to go into the cold water.
+1660|She made ___ progress.
+1661|You ___ your father.
+1662|Try to ___ the temptation.
+1663|We need to ___ this problem.
+1664|They want to ___ the old building.
+1665|We must ___ the number of visitors.
+1666|It's hard to ___ new words.
+1667|We need to ___ the order.
+1668|The rules are too ___.
+1669|Water is ___ in the desert.
+1670|The wind will ___ the leaves.
+1671|This is a ___ change.
+1672|Thank you for your ___ apology.
+1673|He is the ___ survivor.
+1674|This is a very ___ machine.
+1675|It was a ___ decision.
+1676|The patient is now ___.
+1677|The ___ events were surprising.
+1678|There was a ___ increase in prices.
+1679|There's a ___ difference between the two colors.
+1680|We have ___ food for everyone.
+1681|This product is ___ to that one.
+1682|The police ___ him of the crime.
+1683|We need to ___ our energy.
+1684|This work is so ___. It never ends.
+1685|This is a ___ job, only for the summer.
+1686|He has a ___ to be late.
+1687|She did a ___ job.
+1688|I can't ___ this noise.
+1689|The caterpillar will ___ into a butterfly.
+1690|That's a ___ problem. Don't worry about it.
+1691|Winning is the ___ goal.
+1692|The patient will ___ surgery.
+1693|Don't ___ my authority.
+1694|The students wear a school ___.
+1695|I ___ you to see a doctor.
+1696|His answer was ___. It wasn't clear.
+1697|The ___ ocean covers most of the earth.
+1698|We need to ___ the information.
+1699|Water is ___ for life.
+1700|I have a ___ memory of that day.
+1701|Babies are very ___.
+1702|He wants to ___ money from the bank.
+1703|Did anyone ___ the accident?
+1704|The farm will ___ a big crop this year.
