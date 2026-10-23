@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function member(fam) {
+      return signedIn() && exists(/databases/$(database)/documents/families/$(fam)/members/$(request.auth.uid));
+    }
+    match /families/{fam} {
+      // Any device can start a new family; nobody can change or read one they did not join.
+      allow create: if signedIn();
+      allow read: if member(fam);
+      // Knowing the 8-character family code is what lets a device join.
+      match /members/{uid} {
+        allow create, update: if signedIn() && request.auth.uid == uid
+          && exists(/databases/$(database)/documents/families/$(fam));
+        allow read: if signedIn() && request.auth.uid == uid;
+      }
+      match /data/{doc} {
+        allow read, write: if member(fam);
+      }
+      match /profiles/{id} {
+        allow read, write: if member(fam);
+      }
+    }
+  }
+}

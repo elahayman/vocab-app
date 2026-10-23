@@ -122,6 +122,7 @@
     s.city = s.city || { levels: {}, progress: {}, current: 'house', bricks: 0 };
     s.city.items = s.city.items || {};
     s.feed = s.feed || [];
+    s.decisions = s.decisions || {};
     s.weekly = s.weekly || {};
     s.weeklyClaimed = s.weeklyClaimed || {};
   }
@@ -143,9 +144,57 @@
     Store.saveShared(data.shared);
   }
 
+  // Players this device plays as. With sync, only their own device changes a profile,
+  // so a parent's answer to a prize request travels through the shared data.
+  function ownedIds() {
+    try { return JSON.parse(localStorage.getItem('vocab-city-mine')) || []; } catch (e) { return []; }
+  }
+  function own(id) {
+    const ids = ownedIds();
+    if (!ids.includes(id)) {
+      ids.push(id);
+      try { localStorage.setItem('vocab-city-mine', JSON.stringify(ids)); } catch (e) { /* ignore */ }
+    }
+  }
+  function applyDecisions() {
+    const mine = Store.family() ? ownedIds() : Object.keys(data.profiles);
+    mine.forEach((id) => {
+      const p = data.profiles[id];
+      if (!p) return;
+      let changed = false;
+      p.requests.forEach((r, i) => {
+        const d = data.shared.decisions[id + ':' + i];
+        if (r.status === 'pending' && d) {
+          r.status = d;
+          if (d === 'declined') p.coins += r.cost;
+          changed = true;
+        }
+      });
+      if (changed) Store.saveProfile(p);
+    });
+  }
+  applyDecisions();
+
+  // Another device changed something: take it in, and refresh the screen if nothing is in progress.
+  let view = null;
+  Store.onRemote((remote) => {
+    if (remote.shared) data.shared = remote.shared;
+    normalizeShared();
+    Object.keys(data.profiles).forEach((id) => { if (!remote.profiles[id] && (!profile || id !== profile.id)) delete data.profiles[id]; });
+    Object.entries(remote.profiles).forEach(([id, p]) => {
+      // The player on this device keeps its own copy (it may be mid-mission).
+      if (profile && id === profile.id) return;
+      data.profiles[id] = p;
+    });
+    applyDecisions();
+    if (session || document.querySelector('.modal, .showcase')) return;
+    if (view === 'home' && profile) screenHome();
+    else if (view === 'profiles') screenProfiles();
+  });
+
   // ---------- Helpers ----------
   const $app = document.getElementById('app');
-  function h(html) { $app.innerHTML = html; window.scrollTo(0, 0); }
+  function h(html) { view = null; $app.innerHTML = html; window.scrollTo(0, 0); }
   function esc(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
@@ -602,6 +651,9 @@
     return p && p.gender === 'm' ? m : p && p.gender === 'f' ? f : `${m}/${f}`;
   }
 
+  // "to the house": ל + name, dropping the definite ה (הבית → לבית).
+  function toPlace(name) { return 'ל' + (name.startsWith('ה') ? name.slice(1) : name); }
+
   // ---------- Shared news feed ----------
   function pushFeed(entry) {
     data.shared.feed.push(Object.assign({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), t: Date.now(), by: profile.id }, entry));
@@ -613,7 +665,7 @@
     const who = p ? `<b>${esc(p.name)}</b>` : 'מישהו';
     if (e.kind === 'mission') {
       return `${who} ${g(p, 'ביצע', 'ביצעה')} את המשימה היומית ${g(p, 'והוסיף', 'והוסיפה')} ${e.bricks} לבנים 🧱` +
-        (e.item ? ` ${g(p, 'ומצא', 'ומצאה')} ${e.item.emoji} ${esc(e.item.name)} ל${esc(e.item.where)}!` : '');
+        (e.item ? ` ${g(p, 'ומצא', 'ומצאה')} ${e.item.emoji} ${esc(e.item.name)} ${esc(toPlace(e.item.where))}!` : '');
     }
     if (e.kind === 'level') {
       const b = BUILDINGS.find((x) => x.id === e.b);
@@ -675,6 +727,7 @@
     profile = null;
     themeClass();
     const ps = Object.values(data.profiles);
+    if (Store.syncAvailable && !Store.family()) { screenFamily(); return; }
     h(`
       <main class="screen center">
         <div class="logo">🏙️</div>
@@ -691,10 +744,11 @@
         <button class="btn ghost" id="add">+ שחקן חדש</button>
         <button class="btn ghost" id="tour">👀 הצצה: הדמויות, העיר והפרסים</button>
       </main>`);
+    view = 'profiles';
     on('#tour', 'click', () => screenTour(screenProfiles));
     on('.profile-btn', 'click', (e) => {
       profile = data.profiles[e.currentTarget.dataset.id];
-      Store.setActive(profile.id);
+      Store.setActive(profile.id); own(profile.id);
       screenHome();
     });
     on('#add', 'click', screenSetup);
@@ -751,7 +805,7 @@
       if (!name) { document.getElementById('name').focus(); return; }
       profile = newProfile(name, avatar, theme, gender);
       data.profiles[profile.id] = profile;
-      Store.setActive(profile.id);
+      Store.setActive(profile.id); own(profile.id);
       save();
       screenHome();
     });
@@ -858,6 +912,7 @@
     on('#switch', 'click', screenProfiles);
     on('#start', 'click', () => { session = buildSession(day); startLearn(); });
     on('#bonus', 'click', screenDone);
+    view = 'home';
     const seen = () => { profile.feedSeen = Date.now(); save(); screenHome(); };
     on('#news-ok', 'click', seen);
     on('#cheer', 'click', () => {
@@ -1194,9 +1249,9 @@
       save();
       const b = BUILDINGS.find((x) => x.id === data.shared.city.current);
       const pickEl = document.querySelector('.pick');
-      if (pickEl) pickEl.outerHTML = `<p class="note pop">🧱 ${bricks} לבנים הלכו ל${esc(b ? b.name : 'עיר')}</p>`;
+      if (pickEl) pickEl.outerHTML = `<p class="note pop">🧱 ${bricks} לבנים הלכו ${esc(toPlace(b ? b.name : 'העיר'))}</p>`;
       document.getElementById('after').insertAdjacentHTML('beforeend',
-        (item ? `<div class="note pop big-note found"><span class="found-e">${item.emoji}</span><span>מצאת ${esc(item.name)} ל${esc(item.where)}!</span></div>` : '') +
+        (item ? `<div class="note pop big-note found"><span class="found-e">${item.emoji}</span><span>מצאת ${esc(item.name)} ${esc(toPlace(item.where))}!</span></div>` : '') +
         ups.map((u) => { const x = BUILDINGS.find((y) => y.id === u.id); return `<div class="note pop big-note levelup"><span class="lv-art">${window.ART.building(x.id, u.level)}</span><span>${esc(x.name)}: עלינו לשלב ${u.level}!</span></div>`; }).join(''));
       document.getElementById('home').textContent = 'לעיר';
       if (ups.length || item) confetti();
@@ -1330,6 +1385,47 @@
     }
     return new Promise((resolve) => {
       wrap.querySelector('#sc-close').addEventListener('click', () => { stopSong(); wrap.remove(); resolve(); });
+    });
+  }
+
+  // ---------- Family: connecting the phones ----------
+  function screenFamily() {
+    themeClass();
+    const fromLink = new URLSearchParams(location.search).get('family') || '';
+    h(`
+      <main class="screen center">
+        <div class="logo">🏙️</div>
+        <h1>עיר המילים</h1>
+        <p class="muted">כדי שכל הטלפונים בבית יבנו את אותה עיר, מחברים אותם למשפחה אחת.</p>
+        <section class="card done-card">
+          <h3>הטלפון הראשון במשפחה?</h3>
+          <button class="btn primary big" id="create">יצירת משפחה חדשה</button>
+        </section>
+        <section class="card done-card">
+          <h3>יש לנו כבר קוד</h3>
+          <p class="muted small">את הקוד רואים במסך ההורים בטלפון הראשון.</p>
+          <input id="code" class="spell-in" dir="ltr" maxlength="9" autocomplete="off" autocapitalize="characters" placeholder="ABCD2345" value="${esc(fromLink)}">
+          <button class="btn primary" id="join">הצטרפות</button>
+        </section>
+        <p class="muted small" id="fam-msg"></p>
+      </main>`);
+    const busy = (on_) => document.querySelectorAll('#create, #join').forEach((b) => { b.disabled = on_; });
+    const msg = (t) => { document.getElementById('fam-msg').textContent = t; };
+    const done = () => { data = Store.loadAll(); normalizeShared(); applyDecisions(); screenProfiles(); };
+    on('#create', 'click', async () => {
+      busy(true); msg('מתחבר…');
+      try {
+        const code = await Store.createFamily();
+        await dialog({ text: `נוצרה משפחה! הקוד שלכם: ${code}. בטלפונים של הילדים בוחרים "יש לנו כבר קוד" ומקלידים אותו. הקוד יופיע תמיד במסך ההורים.`, cancel: '' });
+        done();
+      } catch (e) { busy(false); msg('לא הצלחנו להתחבר. בדקו שיש אינטרנט ונסו שוב.'); }
+    });
+    on('#join', 'click', async () => {
+      busy(true); msg('מתחבר…');
+      try { await Store.joinFamily(document.getElementById('code').value); done(); } catch (e) {
+        busy(false);
+        msg(e.message === 'bad code' ? 'הקוד צריך להיות 8 תווים (אותיות באנגלית ומספרים).' : 'לא הצלחנו להצטרף. בדקו את הקוד ואת האינטרנט ונסו שוב.');
+      }
     });
   }
 
@@ -1491,7 +1587,7 @@
     const ps = Object.values(data.profiles);
     const set = data.shared.settings;
     const pending = [];
-    ps.forEach((p) => p.requests.forEach((r, i) => { if (r.status === 'pending') pending.push({ p, r, i }); }));
+    ps.forEach((p) => p.requests.forEach((r, i) => { if (r.status === 'pending' && !data.shared.decisions[p.id + ':' + i]) pending.push({ p, r, i }); }));
     const ideas = data.shared.suggestions.filter((x) => x.status === 'pending');
     h(`
       <main class="screen">
@@ -1557,18 +1653,20 @@
           <button class="btn primary" id="save-prizes">שמירת הפרסים</button>
         </section>
         <button class="btn ghost" id="change-pin">שינוי סיסמת הורים</button>
-        <p class="muted small">כרגע ההתקדמות נשמרת במכשיר הזה בלבד.</p>
+        ${Store.family() ? `<section class="card">
+          <h3>חיבור הטלפונים</h3>
+          <p class="small">קוד המשפחה: <b dir="ltr" class="fam-code">${esc(Store.family())}</b></p>
+          <p class="muted small">בטלפון חדש פותחים את האפליקציה, בוחרים "יש לנו כבר קוד" ומקלידים את הקוד. כל הטלפונים עם אותו קוד בונים את אותה עיר.</p>
+          <button class="btn ghost" id="share-code">שליחת הקוד</button>
+        </section>` : '<p class="muted small">כרגע ההתקדמות נשמרת במכשיר הזה בלבד.</p>'}
       </main>`);
     on('#back', 'click', () => (profile ? screenHome() : screenProfiles()));
     on('#set-regular', 'change', (e) => { set.regular = +e.currentTarget.value; Store.saveShared(data.shared); });
     on('#set-complex', 'change', (e) => { set.complex = +e.currentTarget.value; Store.saveShared(data.shared); });
     const decide = (key, ok) => {
-      const [pid, i] = key.split(':');
-      const p = data.profiles[pid];
-      const r = p.requests[+i];
-      r.status = ok ? 'approved' : 'declined';
-      if (!ok) p.coins += r.cost;
-      Store.saveProfile(p);
+      data.shared.decisions[key] = ok ? 'approved' : 'declined';
+      Store.saveShared(data.shared);
+      applyDecisions();
       screenParent();
     };
     on('[data-idea-add]', 'click', (e) => {
@@ -1583,6 +1681,11 @@
       data.shared.suggestions.find((y) => y.id === e.currentTarget.dataset.ideaNo).status = 'declined';
       Store.saveShared(data.shared);
       screenParent();
+    });
+    on('#share-code', 'click', async () => {
+      const text = `קוד המשפחה לעיר המילים: ${Store.family()}\n${location.origin + location.pathname}`;
+      try { if (navigator.share) { await navigator.share({ text }); return; } } catch (e) { return; }
+      try { await navigator.clipboard.writeText(text); await dialog({ text: 'הקוד הועתק. אפשר להדביק אותו בהודעה.', cancel: '' }); } catch (e) { /* ignore */ }
     });
     on('#change-pin', 'click', async () => { if (await setParentPin()) await dialog({ text: 'הסיסמה עודכנה', cancel: '' }); });
     on('[data-gender]', 'change', (e) => {

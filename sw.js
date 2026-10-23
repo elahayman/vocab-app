@@ -1,6 +1,6 @@
 // Offline support: cache the app shell, serve it cache-first, refresh in the background.
-const CACHE = 'vocab-city-v6';
-const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'store.js', 'words.js', 'art.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png'];
+const CACHE = 'vocab-city-v7';
+const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'store.js', 'firebase-config.js', 'words.js', 'art.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
