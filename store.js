@@ -281,8 +281,10 @@
   };
 
   // Reconnect on start and whenever the network comes back.
+  // A device that lost its sign-in gets a new one: register it again with the saved family code.
+  const rejoin = () => fam().collection('members').doc(uid).set({ joined: Date.now() });
   if (config && getFamily()) {
-    start().then(() => { listen(); flush(); }).catch(() => {});
+    start().then(rejoin).then(() => { listen(); flush(); }).catch(() => {});
   }
   window.addEventListener('online', () => {
     if (config && getFamily()) start().then(() => { if (!unsub.length) listen(); flush(); }).catch(() => {});
