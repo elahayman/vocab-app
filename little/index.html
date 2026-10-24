@@ -152,21 +152,34 @@ button:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
 .cone-big svg { height: min(46vh, 330px); width: auto; animation: popin .5s cubic-bezier(.3,1.6,.6,1); }
 .tops { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 .top-btn { width: 76px; height: 76px; border-radius: 50%; background: var(--card); box-shadow: 0 6px 0 var(--card-edge); font-size: 2.8rem; display: grid; place-items: center; }
+.top-btn.flavor { background: var(--c); font-size: 2.2rem; }
 .top-btn:active { transform: translateY(4px); }
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; width: 100%; }
 .gallery div { background: var(--card); border-radius: 18px; display: grid; place-items: center; padding: 8px 0; box-shadow: 0 4px 0 var(--card-edge); }
 .gallery svg { height: 110px; width: auto; }
 .cones-btn { position: relative; }
 .cones-btn b { position: absolute; top: -4px; right: -4px; min-width: 24px; height: 24px; padding: 0 5px; box-sizing: border-box; border-radius: 12px; background: var(--berry); color: #fff; font-family: var(--display); font-size: 14px; line-height: 24px; }
+.cat.locked { opacity: .45; position: relative; }
+.cat .page { width: 100%; max-width: 140px; height: auto; }
+.lock { position: absolute; font-size: 2rem; top: 40%; }
+.canvas { width: min(88vw, 380px); max-width: 100%; aspect-ratio: 1; background: var(--card); border-radius: 30px; box-shadow: 0 6px 0 var(--card-edge); padding: 10px; box-sizing: border-box; }
+.canvas svg { width: 100%; height: 100%; display: block; }
+.canvas [data-r] { cursor: pointer; transition: fill .2s; }
+.paints { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: min(88vw, 380px); }
+.paint { aspect-ratio: 1; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 3px rgba(0,0,0,.12); }
+.paint.on { box-shadow: 0 0 0 4px var(--card), 0 0 0 8px var(--blue-deep); transform: scale(1.05); }
 .empty { font-size: 4rem; opacity: .5; }
 
 /* balloons */
 #sky { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }
 .balloon { position: absolute; bottom: -140px; width: 70px; pointer-events: auto; animation: rise 2.4s ease-in forwards; }
+.balloon.deco { pointer-events: none; }
+.balloon.slow { width: 92px; animation-duration: 7.5s; animation-timing-function: linear; }
+.bit { position: fixed; width: 12px; height: 12px; border-radius: 50%; margin: -6px 0 0 -6px; animation: fly .55s ease-out forwards; }
+@keyframes fly { to { transform: translate(var(--bx), var(--by)) scale(.3); opacity: 0; } }
+.pop-count { font-family: var(--display); font-weight: 800; font-size: 2.2rem; color: var(--blue-deep); }
 .balloon svg { width: 100%; height: auto; display: block; }
-.balloon.pop { animation: popb .25s forwards; }
 @keyframes rise { to { transform: translateY(calc(-100vh - 180px)) translateX(var(--dx)); } }
-@keyframes popb { to { transform: scale(1.8); opacity: 0; } }
 
 /* parent sheet */
 .gear { opacity: .55; }
@@ -223,7 +236,7 @@ const CATS = [
     ['six',null,null,6],['seven',null,null,7],['eight',null,null,8],['nine',null,null,9],['ten',null,null,10] ] },
   { id: 'go', name: 'Vehicles', icon: '✈️', words: [
     ['car','🚗'],['bus','🚌'],['airplane','✈️'],['train','🚂'],['boat','⛵'],['bike','🚲'],['truck','🚚'],['helicopter','🚁'] ] },
-  { id: 'sweets', name: 'Yummy', icon: '🍪', words: [
+  { id: 'sweets', name: 'Sweets', icon: '🍪', words: [
     ['ice cream','🍦','',0,'ice cream'],['cookie','🍪'],['cake','🎂'],['candy','🍬'],['chocolate','🍫','',0,'chocolate'],
     ['lollipop','🍭'],['pizza','🍕','',0,'pizza'],['milk','🥛','',0,'milk'],['bread','🍞','',0,'bread'],['egg','🥚'] ] },
   { id: 'fruit', name: 'Fruit', icon: '🍓', words: [
@@ -468,6 +481,8 @@ const Sync = (() => {
     });
     const have = new Set(S.desserts.map(d => d.d));
     (remote.desserts || []).forEach(d => { if (!have.has(d.d)) { S.desserts.push(d); diff = true; } });
+    if ((remote.rounds || 0) > (S.rounds || 0)) { S.rounds = remote.rounds; diff = true; }
+    Object.entries(remote.paint || {}).forEach(([id, f]) => { S.paint = S.paint || {}; if (!S.paint[id]) { S.paint[id] = f; diff = true; } });
     if (diff) { S.desserts.sort((a, b) => a.d - b.d); S.desserts = S.desserts.slice(-80); saveLocal(); }
     return diff;
   }
@@ -499,7 +514,7 @@ const Sync = (() => {
         await db.runTransaction(async tx => {
           const snap = await tx.get(ref);
           if (snap.exists && merge(JSON.parse(snap.data().json))) changed();
-          tx.set(ref, { json: JSON.stringify({ words: S.words, desserts: S.desserts }), t: Date.now() });
+          tx.set(ref, { json: JSON.stringify({ words: S.words, desserts: S.desserts, rounds: S.rounds || 0, paint: S.paint || {} }), t: Date.now() });
         });
       } catch (e) { timer = setTimeout(push, 15000); }
     }, 2500);
@@ -561,6 +576,7 @@ const ICON = {
   next: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   gear: '<svg viewBox="0 0 24 24" fill="none" stroke="#5f7a96" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>',
   mic: '<svg viewBox="0 0 24 24" fill="#fff"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5"/><path d="M5 11a7 7 0 0014 0M12 18v3.5M8.5 21.5h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  brush: '<svg viewBox="0 0 24 24"><path d="M14 3l7 7-8 8-7-7z" fill="#ff8fc0"/><path d="M6 11l7 7-3 3H4v-6z" fill="#2f80ed"/></svg>',
   cones: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5.5" fill="#ff8fc0"/><path d="M7 11h10l-5 11z" fill="#e7a95a"/></svg>',
 };
 // Original blue puppy with floppy ears (our own character).
@@ -579,7 +595,38 @@ function pup(cls = '') {
     <circle cx="36" cy="72" r="5" fill="#ff9fb8" opacity=".6"/><circle cx="84" cy="72" r="5" fill="#ff9fb8" opacity=".6"/>
   </svg>`;
 }
-const FLAVORS = ['#7db7ff', '#ff9fc4', '#fff0c2', '#a8694b', '#9fe6c6', '#ffd36e'];
+// Flavors she picks for each layer; the puppy says the name.
+const FLAVORS = [['strawberry', '#ff9fc4', '🍓'], ['chocolate', '#a8694b', '🍫'], ['vanilla', '#fff0c2', '🤍'],
+  ['blueberry', '#7db7ff', '🫐'], ['mint', '#9fe6c6', '🌿'], ['banana', '#ffe27a', '🍌']];
+const BLANK = '#eef3f8';
+const KINDS = { cone: 'ice cream', cake: 'cake', cupcake: 'cupcake' };
+function treat(kind, layers, top) {
+  if (kind === 'cake') return cake(layers, top);
+  if (kind === 'cupcake') return cupcake(layers, top);
+  return cone(layers, top);
+}
+function cake(layers, top) {
+  const n = layers.length, H = 40 + n * 26 + (top ? 40 : 10);
+  let s = `<svg viewBox="0 0 160 ${H}" aria-hidden="true"><ellipse cx="80" cy="${H - 8}" rx="74" ry="7" fill="#d9e6f2" stroke="#b9c9da" stroke-width="2"/>`;
+  layers.forEach((c, i) => {
+    const y = H - 14 - (i + 1) * 26;
+    s += `<rect x="18" y="${y}" width="124" height="26" rx="7" fill="${c}" stroke="rgba(0,0,0,.14)" stroke-width="2"/>`;
+    s += `<path d="M22 ${y + 4} h116" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".5"/>`;
+  });
+  if (top) s += `<text x="80" y="${H - 18 - n * 26}" font-size="34" text-anchor="middle">${top}</text>`;
+  return s + '</svg>';
+}
+function cupcake(layers, top) {
+  const n = layers.length, H = 70 + n * 18 + (top ? 40 : 8);
+  let s = `<svg viewBox="0 0 120 ${H}" aria-hidden="true">`;
+  s += `<path d="M22 ${H - 52} L34 ${H - 4} H86 L98 ${H - 52} Z" fill="#5aa2f5" stroke="#1a5fbf" stroke-width="2.5" stroke-linejoin="round"/>`;
+  s += `<path d="M44 ${H - 50} L48 ${H - 6} M60 ${H - 50} V${H - 6} M76 ${H - 50} L72 ${H - 6}" stroke="#1a5fbf" stroke-width="2"/>`;
+  layers.forEach((c, i) => {
+    s += `<ellipse cx="60" cy="${H - 56 - i * 18}" rx="${44 - i * 4}" ry="15" fill="${c}" stroke="rgba(0,0,0,.14)" stroke-width="2"/>`;
+  });
+  if (top) s += `<text x="60" y="${H - 66 - (n - 1) * 18}" font-size="32" text-anchor="middle">${top}</text>`;
+  return s + '</svg>';
+}
 function cone(scoops, top, size = 1) {
   const n = scoops.length, r = 26, step = 30, h = 120 + Math.max(n - 1, 0) * step + (top ? 34 : 6);
   const base = h - 120;
@@ -634,6 +681,7 @@ function home() {
   }).join('');
   // Her ice cream gallery sits in the top corner, apart from the categories.
   app.innerHTML = `<div class="bar"><button class="round-btn cones-btn" data-go="gallery" aria-label="my ice creams">${ICON.cones}${S.desserts.length ? `<b>${S.desserts.length}</b>` : ''}</button>
+      <button class="round-btn cones-btn" data-go="paint" aria-label="coloring">${ICON.brush}${unlockedPages() > (S.pagesSeen || 1) ? '<b>!</b>' : ''}</button>
       <div class="grow">${pup('small')}</div>
       <button class="round-btn gear" id="gear" aria-label="parents (press and hold)">${ICON.gear}</button></div>` +
     `<div class="stage home-stage"><div class="home-scroll"><div class="cats">${tiles}
@@ -660,9 +708,10 @@ function startRound(catId) {
   for (const w of fresh) if (set.length < 4 - reserve) set.push(w);
   for (const w of known.concat(learning, fresh)) if (set.length < 4 && !set.includes(w)) set.push(w);
   const teach = set.filter(w => status(w.id) !== 'known');
-  round = { cat: c, set, teach: teach.length ? teach : set, i: 0, scoops: [], concepts: [] };
-  // Concept practice on a word she knows well.
-  const obj = CONCEPT_CATS.includes(c.id) && shuffle(c.words.filter(w => !w.own && (S.words[w.id] || {}).box >= 2))[0];
+  round = { cat: c, set, teach: teach.length ? teach : set, i: 0, scoops: [], concepts: [], kind: Object.keys(KINDS)[(S.rounds || 0) % 3] };
+  // Concept practice on a word she already knows, or else one she meets in this round.
+  const known2 = c.words.filter(w => !w.own && (S.words[w.id] || {}).box >= 2);
+  const obj = CONCEPT_CATS.includes(c.id) && shuffle(known2.length ? known2 : set.filter(w => !w.own))[0];
   if (obj) {
     const groupKnown = g => g.every(v => status('concept:' + v.c) === 'known');
     let open = 0; while (open < CONCEPTS.length - 1 && groupKnown(CONCEPTS[open])) open++;
@@ -720,7 +769,7 @@ function quizStep() {
   const others = shuffle(seenPool.length >= 2 ? seenPool : pool).slice(0, 2);
   const opts = shuffle([target, ...others]);
   let misses = 0, done = false;
-  app.innerHTML = bar(`<span class="tracker">${cone(round.scoops)}</span>`) +
+  app.innerHTML = bar(`<span class="tracker">${treat(round.kind, round.scoops)}</span>`) +
     `<div class="stage"><button class="ask" id="ask"><span class="round-btn">${ICON.speak}</span><span>${target.w}</span></button>
      <div class="opts" style="grid-template-columns:repeat(${opts.length},1fr)">${opts.map((w, i) => `<button class="opt" data-i="${i}" aria-label="${w.w}">${pic(w)}</button>`).join('')}</div></div>`;
   const ask = () => speak('q:' + target.id, target.q);
@@ -736,9 +785,9 @@ function quizStep() {
       if (misses === 0) { r.box = Math.min(r.box + 1, 5); r.right++; } else r.wrong++;
       save();
       sfx.yay(); balloons(misses ? 2 : 4);
-      round.scoops.push(FLAVORS[round.scoops.length % FLAVORS.length]);
-      praise(pick(['Yes!', 'Great job!', 'Hooray!', 'Well done!', 'Yummy!']) + ' ' + cap(target.n || target.w) + '!');
-      setTimeout(() => { sfx.scoop(); const t = app.querySelector('.tracker'); if (t) t.innerHTML = cone(round.scoops); }, 350);
+      round.scoops.push(BLANK);
+      praise(pick(['Yes!', 'Great job!', 'Hooray!', 'Well done!', 'Good job!']) + ' ' + cap(target.n || target.w) + '!');
+      setTimeout(() => { sfx.scoop(); const t = app.querySelector('.tracker'); if (t) t.innerHTML = treat(round.kind, round.scoops); }, 350);
       setTimeout(() => { round.qi++; quizStep(); }, 2300);
     } else {
       misses++;
@@ -748,7 +797,8 @@ function quizStep() {
       if (misses >= 2) {
         app.querySelectorAll('.opt').forEach(o => { if (opts[+o.dataset.i] !== target) o.classList.add('faded'); else o.classList.add('hint'); });
       }
-      speak('q:' + target.id, 'Try again! ' + target.q);
+      // Name what she tapped, then ask again: "This is a dog. Where is the cat?"
+      speak('learn:' + w.id, w.learn, () => speak('q:' + target.id, target.q));
     }
   });
 }
@@ -758,8 +808,8 @@ function quizStep() {
 function sayIt() {
   sky.innerHTML = '';
   const w = round.set.find(x => (S.words[x.id] || {}).box >= 2);
-  if (!w) return dessert();
-  app.innerHTML = bar(`<span class="tracker">${cone(round.scoops)}</span>`) +
+  if (!w) return party();
+  app.innerHTML = bar(`<span class="tracker">${treat(round.kind, round.scoops)}</span>`) +
     `<div class="stage"><button class="ask" id="ask"><span class="round-btn">${ICON.speak}</span><span>What is this?</span></button>
      <div class="big-card small-card">${pic(w)}</div>
      <button class="mic" id="mic" aria-label="say it">${ICON.mic}</button>
@@ -782,50 +832,145 @@ function sayIt() {
       .then(r => { live = r; mic.classList.add('rec'); })
       .catch(() => { mic.classList.add('rec'); setTimeout(() => { mic.classList.remove('rec'); answer(); }, 2500); }); // no microphone: just give her time to say it
   };
-  next.onclick = dessert;
+  next.onclick = party;
 }
 
+// She builds this round's treat: one layer per right answer, each in a flavor she picks, then a topping.
 function dessert() {
   sky.innerHTML = '';
   sfx.fanfare();
-  const scoops = round.scoops.length ? round.scoops : [FLAVORS[0]];
-  app.innerHTML = bar() + `<div class="stage"><div class="cone-big" id="cone">${cone(scoops)}</div>
-    <div class="tops" id="tops">${['🍓', '🍪', '🦄', '🌈'].map(t => `<button class="top-btn" data-t="${t}" aria-label="topping">${t}</button>`).join('')}</div></div>`;
-  say('Look! Your ice cream! Pick a topping!');
-  app.querySelectorAll('.top-btn').forEach(b => b.onclick = () => {
-    const t = b.dataset.t;
-    S.desserts.push({ s: scoops, t, d: Date.now() }); if (S.desserts.length > 80) S.desserts.shift(); save();
-    document.getElementById('cone').innerHTML = cone(scoops, t);
-    document.getElementById('tops').innerHTML = `<button class="next" id="done" aria-label="home">${ICON.home.replace(/#1a5fbf/g, '#fff')}</button>`;
-    sfx.yay(); balloons(6); say('Yummy! Great job!');
-    document.getElementById('done').onclick = home;
+  const kind = round.kind, max = Math.max(1, Math.min(round.scoops.length, kind === 'cake' ? 5 : 8)), layers = [];
+  const name = KINDS[kind];
+  app.innerHTML = bar(`<div class="dots" id="left"></div>`) + `<div class="stage"><div class="cone-big" id="cone">${treat(kind, layers)}</div>
+    <div class="tops" id="tops">${FLAVORS.map(([n, c, e], i) => `<button class="top-btn flavor" data-f="${i}" style="--c:${c}" aria-label="${n}">${e}</button>`).join('')}</div></div>`;
+  const left = () => { document.getElementById('left').innerHTML = Array.from({ length: max }, (_, i) => `<i class="${i < layers.length ? 'on' : ''}"></i>`).join(''); };
+  left();
+  say(`Let's make ${kind === 'cone' ? 'ice cream' : 'a ' + name}! Pick a flavor!`);
+  app.querySelectorAll('.flavor').forEach(b => b.onclick = () => {
+    if (layers.length >= max) return;
+    const [n, c] = FLAVORS[+b.dataset.f];
+    layers.push(c); sfx.scoop(); say(cap(n) + '!');
+    document.getElementById('cone').innerHTML = treat(kind, layers); left();
+    if (layers.length === max) setTimeout(toppings, 700);
   });
+  function toppings() {
+    document.getElementById('tops').innerHTML = ['🍓', '🍪', '🦄', '🌈', '🍒', '⭐'].map(t => `<button class="top-btn" data-t="${t}" aria-label="topping">${t}</button>`).join('');
+    say('Now pick a topping!');
+    app.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
+      const t = b.dataset.t;
+      S.desserts.push({ k: kind, s: layers, t, d: Date.now() }); if (S.desserts.length > 80) S.desserts.shift();
+      S.rounds = (S.rounds || 0) + 1; save();
+      document.getElementById('cone').innerHTML = treat(kind, layers, t);
+      document.getElementById('tops').innerHTML = `<button class="next" id="done" aria-label="home">${ICON.home.replace(/#1a5fbf/g, '#fff')}</button>`;
+      sfx.yay(); slowBalloons(5); say(`Great job! Your ${name}!`);
+      document.getElementById('done').onclick = home;
+    });
+  }
 }
 
 function gallery() {
   onSync = gallery;
-  const items = S.desserts.slice().reverse().map(d => `<div>${cone(d.s, d.t)}</div>`).join('');
+  const items = S.desserts.slice().reverse().map(d => `<div>${treat(d.k || 'cone', d.s, d.t)}</div>`).join('');
   app.innerHTML = bar() + `<div class="stage home-stage"><div class="home-scroll">${items ? `<div class="gallery">${items}</div>` : `<div class="stage">${pup()}<div class="cone-big">${cone([])}</div></div>`}</div></div>`;
-  say(S.desserts.length ? 'Your ice creams!' : 'Play a game, and make ice cream!');
+  say(S.desserts.length ? 'Your treats!' : 'Play a game, and make ice cream!');
+}
+
+// ---------- coloring ----------
+// Each page is a list of shapes she fills by tapping. A new page opens after every finished round.
+const PAGES = (() => {
+  const E = (cx, cy, rx, ry, rot) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"${rot ? ` transform="rotate(${rot} ${cx} ${cy})"` : ''}/>`;
+  const C = (cx, cy, r) => `<circle cx="${cx}" cy="${cy}" r="${r}"/>`;
+  const P = d => `<path d="${d}"/>`;
+  const band = (r1, r2) => P(`M${100 - r1} 150 A${r1} ${r1} 0 0 1 ${100 + r1} 150 L${100 + r2} 150 A${r2} ${r2} 0 0 0 ${100 - r2} 150 Z`);
+  return [
+    { id: 'pup', word: 'dog', shapes: [E(50, 95, 24, 44, 18), E(150, 95, 24, 44, -18), C(100, 100, 66), E(100, 132, 40, 30), C(76, 88, 9), C(124, 88, 9), E(100, 114, 13, 9), P('M90 146 q10 22 20 0 z')] },
+    { id: 'icecream', word: 'ice cream', shapes: [P('M62 112 L100 192 L138 112 Z'), C(100, 104, 36), C(100, 62, 31), C(100, 24, 11), C(76, 112, 8), C(124, 112, 8)] },
+    { id: 'car', word: 'car', shapes: [P('M58 100 L78 62 H128 L150 100 Z'), P('M82 96 L94 70 H108 V96 Z'), P('M114 96 V70 H124 L140 96 Z'), P('M18 100 H182 Q190 100 190 112 V140 H10 V112 Q10 100 18 100 Z'), C(178, 116, 7), C(58, 146, 20), C(142, 146, 20), C(58, 146, 8), C(142, 146, 8)] },
+    { id: 'rainbow', word: 'rainbow', shapes: [band(92, 80), band(80, 68), band(68, 56), band(56, 44), band(44, 32), E(26, 154, 26, 15), E(174, 154, 26, 15), C(168, 38, 18)] },
+    { id: 'butterfly', word: 'butterfly', shapes: [E(62, 78, 40, 32, -25), E(138, 78, 40, 32, 25), E(70, 132, 28, 24, 25), E(130, 132, 28, 24, -25), C(58, 76, 12), C(142, 76, 12), E(100, 108, 8, 46), C(100, 56, 11)] },
+    { id: 'fish', word: 'fish', shapes: [P('M146 100 L190 64 L184 100 L190 136 Z'), E(92, 100, 62, 42), P('M70 60 Q92 30 122 62 Z'), P('M80 140 Q96 162 114 140 Z'), C(60, 90, 9), P('M100 60 Q114 100 100 140'), C(30, 40, 9), C(46, 22, 6)] },
+  ];
+})();
+const PAINTS = [['red', '#e8383d'], ['orange', '#ff8a1f'], ['yellow', '#ffd400'], ['green', '#2fb350'], ['blue', '#2f80ed'],
+  ['purple', '#8e4fd6'], ['pink', '#ff8fc0'], ['brown', '#8b5a2b'], ['black', '#222222'], ['white', '#ffffff']];
+const unlockedPages = () => Math.min(PAGES.length, 1 + (S.rounds || 0));
+function pageSvg(pg) {
+  const fills = (S.paint || {})[pg.id] || {};
+  return `<svg viewBox="0 0 200 200" class="page" aria-hidden="true">${pg.shapes.map((sh, i) =>
+    sh.replace(/^<(\w+)/, `<$1 data-r="${i}" fill="${fills[i] || '#ffffff'}" stroke="#1b3a5c" stroke-width="3" stroke-linejoin="round"`)).join('')}</svg>`;
+}
+function paintList() {
+  onSync = paintList; sky.innerHTML = '';
+  S.pagesSeen = unlockedPages(); saveLocal();
+  app.innerHTML = bar() + `<div class="stage home-stage"><div class="home-scroll"><div class="cats">${PAGES.map((pg, i) => i < unlockedPages()
+    ? `<button class="cat" data-page="${i}" aria-label="${pg.word}">${pageSvg(pg)}</button>`
+    : `<div class="cat locked">${pageSvg(pg)}<span class="lock">🔒</span></div>`).join('')}</div></div></div>`;
+  say('Pick a picture!');
+  app.querySelectorAll('[data-page]').forEach(b => b.onclick = () => paintPage(PAGES[+b.dataset.page]));
+}
+function paintPage(pg) {
+  onSync = null;
+  let color = PAINTS[4];
+  app.innerHTML = bar(`<span class="word" style="font-size:1.8rem">${pg.word}</span>`) +
+    `<div class="stage"><div class="canvas" id="canvas">${pageSvg(pg)}</div>
+     <div class="paints">${PAINTS.map(([n, c], i) => `<button class="paint ${i === 4 ? 'on' : ''}" data-p="${i}" style="--c:${c}" aria-label="${n}"></button>`).join('')}</div></div>`;
+  say(cap(pg.word) + '! Pick a color!');
+  app.querySelectorAll('.paint').forEach(b => b.onclick = () => {
+    color = PAINTS[+b.dataset.p];
+    app.querySelectorAll('.paint').forEach(x => x.classList.toggle('on', x === b));
+    say(cap(color[0]) + '!');
+  });
+  document.getElementById('canvas').onclick = e => {
+    const sh = e.target.closest('[data-r]'); if (!sh) return;
+    sh.setAttribute('fill', color[1]); sfx.scoop();
+    S.paint = S.paint || {}; (S.paint[pg.id] = S.paint[pg.id] || {})[sh.dataset.r] = color[1]; save();
+  };
 }
 
 // ---------- balloons ----------
-const BALLOON = ['#2f80ed', '#5aa2f5', '#1a5fbf', '#8cc4ff'];
-function balloons(n) {
-  for (let i = 0; i < n; i++) {
-    const b = document.createElement('button');
-    const c = BALLOON[i % BALLOON.length];
-    b.className = 'balloon'; b.setAttribute('aria-label', 'balloon');
-    b.style.left = (8 + Math.random() * 74) + '%';
-    b.style.setProperty('--dx', (Math.random() * 60 - 30) + 'px');
-    b.style.animationDelay = (i * 0.18) + 's';
-    b.innerHTML = `<svg viewBox="0 0 60 110"><path d="M30 70 q-4 14 2 22 q6 8 -2 18" stroke="#5f7a96" stroke-width="1.5" fill="none"/>
-      <ellipse cx="30" cy="34" rx="25" ry="31" fill="${c}"/><path d="M26 64 h8 l-4 6z" fill="${c}"/>
-      <ellipse cx="21" cy="22" rx="5" ry="9" fill="#fff" opacity=".45"/></svg>`;
-    b.onpointerdown = e => { e.stopPropagation(); sfx.pop(); b.classList.add('pop'); setTimeout(() => b.remove(), 260); };
-    b.addEventListener('animationend', e => { if (e.animationName === 'rise') b.remove(); });
-    sky.appendChild(b);
+// Quick decorative balloons after an answer; slow balloons she pops at the party and the ice cream.
+const BALLOON = ['#2f80ed', '#5aa2f5', '#1a5fbf', '#8cc4ff', '#ff8fc0', '#ffd400'];
+const NUMS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+function balloon(c, { delay = 0, slow = false, onPop = null, onGone = null } = {}) {
+  const b = document.createElement('button');
+  b.className = 'balloon' + (slow ? ' slow' : ' deco'); b.setAttribute('aria-label', 'balloon');
+  b.style.left = (6 + Math.random() * 72) + '%';
+  b.style.setProperty('--dx', (Math.random() * 60 - 30) + 'px');
+  b.style.animationDelay = delay + 's';
+  b.innerHTML = `<svg viewBox="0 0 60 110"><path d="M30 70 q-4 14 2 22 q6 8 -2 18" stroke="#5f7a96" stroke-width="1.5" fill="none"/>
+    <ellipse cx="30" cy="34" rx="25" ry="31" fill="${c}"/><path d="M26 64 h8 l-4 6z" fill="${c}"/>
+    <ellipse cx="21" cy="22" rx="5" ry="9" fill="#fff" opacity=".45"/></svg>`;
+  if (slow) b.onpointerdown = e => {
+    e.stopPropagation(); if (b.dataset.popped) return; b.dataset.popped = '1';
+    sfx.pop(); burst(b, c); b.remove(); if (onPop) onPop();
+  };
+  b.addEventListener('animationend', e => { if (e.animationName === 'rise' && b.isConnected) { b.remove(); if (onGone) onGone(); } });
+  sky.appendChild(b);
+}
+function burst(b, c) {
+  const r = b.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.width * 0.55;
+  for (let i = 0; i < 10; i++) {
+    const d = document.createElement('i'), a = i / 10 * Math.PI * 2;
+    d.className = 'bit'; d.style.left = x + 'px'; d.style.top = y + 'px'; d.style.background = c;
+    d.style.setProperty('--bx', Math.cos(a) * 60 + 'px'); d.style.setProperty('--by', Math.sin(a) * 60 + 'px');
+    sky.appendChild(d); setTimeout(() => d.remove(), 600);
   }
+}
+function balloons(n) { for (let i = 0; i < n; i++) balloon(BALLOON[i % 4], { delay: i * 0.18 }); }
+function slowBalloons(n) { for (let i = 0; i < n; i++) balloon(pick(BALLOON), { delay: i * 0.7, slow: true }); }
+
+// End of a round: slow balloons to pop, and the puppy counts the pops in English.
+function party() {
+  sky.innerHTML = '';
+  const n = 8; let popped = 0, gone = 0;
+  app.innerHTML = bar(`<span class="pop-count" id="pc">0</span>`) + `<div class="stage">${pup()}</div>`;
+  say('Pop the balloons!');
+  const check = () => { if (popped + gone === n) setTimeout(dessert, 900); };
+  for (let i = 0; i < n; i++) balloon(BALLOON[i % BALLOON.length], {
+    delay: 0.8 + i * 0.8, slow: true,
+    onPop: () => { popped++; const pc = document.getElementById('pc'); if (pc) pc.textContent = popped; say(NUMS[popped - 1] + '!'); check(); },
+    onGone: () => { gone++; check(); },
+  });
 }
 
 // ---------- parents (press and hold the gear) ----------
@@ -929,7 +1074,7 @@ function recordings() {
 
 app.addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (!g) return;
-  if (g.dataset.go === 'home') home(); else if (g.dataset.go === 'gallery') gallery();
+  if (g.dataset.go === 'home') home(); else if (g.dataset.go === 'gallery') gallery(); else if (g.dataset.go === 'paint') paintList();
 });
 if ('serviceWorker' in navigator && /github\.io$/.test(location.hostname)) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
