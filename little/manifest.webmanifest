@@ -3,7 +3,7 @@
   "short_name": "Blue Pup",
   "description": "First English words with pictures and sound",
   "lang": "en",
-  "id": "./",
+  "id": "/vocab-app/little/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
