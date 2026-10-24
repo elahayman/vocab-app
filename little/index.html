@@ -1,0 +1,938 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#2f80ed">
+<script src="../firebase-config.js"></script>
+</head>
+<body>
+<!-- ARTIFACT-START -->
+<title>Blue Pup Words</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Rubik:wght@400;600&display=swap">
+<style>
+/* Layout: one full-height toy screen; a top bar (home, ice-cream tracker, speaker) over one big stage. Single bright look on purpose. */
+:root {
+  --sky: #dff0ff;
+  --ink: #1b3a5c;
+  --blue: #2f80ed;
+  --blue-deep: #1a5fbf;
+  --card: #ffffff;
+  --card-edge: #b9d7f5;
+  --sun: #ffcf33;
+  --berry: #ff6f91;
+  --mint: #3cc98a;
+  --soft: #5f7a96;
+  --display: "Baloo 2", "Rubik", system-ui, sans-serif;
+  --body: "Rubik", system-ui, sans-serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; background: var(--sky); color: var(--ink); font-family: var(--body);
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  overflow: hidden; touch-action: manipulation;
+}
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; }
+button:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
+#app {
+  height: 100%; display: flex; flex-direction: column; box-sizing: border-box;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 10px 14px;
+  max-width: 560px; margin: 0 auto; position: relative;
+}
+.bar { display: flex; align-items: center; gap: 10px; min-height: 60px; }
+.bar .grow { flex: 1; min-width: 0; display: flex; justify-content: center; }
+.round-btn {
+  width: 56px; height: 56px; border-radius: 50%; background: var(--card);
+  box-shadow: 0 4px 0 var(--card-edge); display: grid; place-items: center; flex: none;
+}
+.round-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--card-edge); }
+.round-btn svg { width: 30px; height: 30px; }
+.stage { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+
+/* start */
+.hello { font-family: var(--display); font-weight: 800; font-size: 2.4rem; color: var(--blue-deep); margin: 0; text-align: center; line-height: 1.1; }
+.play {
+  width: 150px; height: 150px; border-radius: 50%; background: var(--blue); color: #fff;
+  box-shadow: 0 8px 0 var(--blue-deep); display: grid; place-items: center;
+  animation: breathe 2.2s ease-in-out infinite;
+}
+.play:active { transform: translateY(6px); box-shadow: 0 2px 0 var(--blue-deep); }
+.play svg { width: 70px; height: 70px; margin-left: 10px; }
+@keyframes breathe { 50% { transform: scale(1.06); } }
+.pup { width: 150px; height: 150px; }
+.pup.small { width: 64px; height: 64px; }
+
+/* home */
+.cats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; width: 100%; }
+.cat {
+  background: var(--card); border-radius: 26px; box-shadow: 0 6px 0 var(--card-edge);
+  padding: 14px 8px 12px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.cat:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--card-edge); }
+.cat .pic { font-size: 3.4rem; line-height: 1; height: 3.6rem; display: flex; align-items: center; gap: 2px; }
+.cat .name { font-family: var(--display); font-weight: 600; font-size: 1.1rem; color: var(--soft); }
+.stars { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; }
+.stars i { width: 9px; height: 9px; border-radius: 50%; background: var(--card-edge); }
+.stars i.on { background: var(--sun); }
+.home-scroll { width: 100%; overflow-y: auto; flex: 1; min-height: 0; padding: 6px 2px 10px; box-sizing: border-box; }
+.home-stage { justify-content: flex-start; }
+
+/* learn */
+.big-card {
+  width: min(78vw, 330px); aspect-ratio: 1; max-width: 100%; background: var(--card); border-radius: 40px;
+  box-shadow: 0 8px 0 var(--card-edge); display: grid; place-items: center; animation: popin .45s cubic-bezier(.3,1.6,.6,1);
+}
+.big-card .pic { font-size: min(44vw, 190px); line-height: 1; }
+.big-card .pic.count { font-size: min(13vw, 56px); }
+.word { font-family: var(--display); font-weight: 800; font-size: 2.6rem; color: var(--blue-deep); margin: 0; line-height: 1; }
+.next {
+  width: 92px; height: 92px; border-radius: 50%; background: var(--blue); color: #fff; box-shadow: 0 6px 0 var(--blue-deep);
+  display: grid; place-items: center;
+}
+.next:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--blue-deep); }
+.next svg { width: 46px; height: 46px; }
+@keyframes popin { from { transform: scale(.4); opacity: 0; } }
+.dots { display: flex; gap: 8px; }
+.dots i { width: 14px; height: 14px; border-radius: 50%; background: var(--card); box-shadow: inset 0 0 0 2px var(--card-edge); }
+.dots i.on { background: var(--blue); box-shadow: none; }
+
+/* quiz */
+.ask {
+  display: flex; align-items: center; gap: 12px; background: var(--card); border-radius: 999px;
+  padding: 8px 20px 8px 8px; box-shadow: 0 5px 0 var(--card-edge);
+}
+.ask .round-btn { background: var(--blue); box-shadow: 0 4px 0 var(--blue-deep); color: #fff; }
+.ask span { font-family: var(--display); font-weight: 800; font-size: 1.5rem; }
+.opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
+.opt {
+  aspect-ratio: 3/4; max-width: 100%; background: var(--card); border-radius: 26px; box-shadow: 0 6px 0 var(--card-edge);
+  display: grid; place-items: center; transition: opacity .3s, transform .15s;
+}
+.opt .pic { font-size: min(18vw, 84px); line-height: 1; }
+.opt .pic.count { font-size: min(6.5vw, 30px); }
+.opt:active { transform: translateY(4px); }
+.opt.right { box-shadow: 0 0 0 6px var(--mint), 0 6px 0 var(--card-edge); animation: hop .5s; }
+.opt.wrong { animation: wobble .5s; }
+.opt.faded { opacity: .25; pointer-events: none; }
+.opt.hint { animation: pulse 1s ease-in-out infinite; }
+@keyframes hop { 40% { transform: translateY(-18px) scale(1.06); } }
+@keyframes wobble { 20% { transform: rotate(-8deg); } 40% { transform: rotate(7deg); } 60% { transform: rotate(-5deg); } 80% { transform: rotate(3deg); } }
+@keyframes pulse { 50% { transform: scale(1.07); box-shadow: 0 0 0 6px var(--sun), 0 6px 0 var(--card-edge); } }
+
+.opt.lesson { aspect-ratio: auto; padding: 14px 0 10px; gap: 6px; }
+.opt.lesson b { font-family: var(--display); font-size: 1.4rem; color: var(--blue-deep); }
+.pic.art { position: relative; display: block; width: 1.6em; height: 1.6em; }
+.big-card .pic.art { font-size: min(32vw, 140px); }
+.opt .pic.art { font-size: min(16vw, 70px); }
+.pic.art > span { position: absolute; left: 50%; transform: translateX(-50%); line-height: 1; }
+.pic.art .ground { position: absolute; left: 0; right: 0; bottom: 0; height: .05em; min-height: 3px; border-radius: 3px; background: var(--card-edge); }
+.cat .pic span { line-height: 1; }
+.pic.count { display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 2px; max-width: 90%; }
+.blob { display: block; width: 68%; aspect-ratio: 1; border-radius: 48% 52% 45% 55% / 55% 45% 55% 45%; background: var(--c); box-shadow: inset -8px -10px 0 rgba(0,0,0,.12); }
+.blob.light { box-shadow: inset -8px -10px 0 rgba(0,0,0,.08), 0 0 0 3px #d7e3ef; }
+
+/* say it */
+.small-card { width: min(56vw, 240px); }
+.small-card .pic { font-size: min(32vw, 140px); }
+.small-card .pic.art { font-size: min(24vw, 100px); }
+.mic { width: 104px; height: 104px; border-radius: 50%; background: var(--berry); box-shadow: 0 6px 0 #d14b6e; display: grid; place-items: center; }
+.mic svg { width: 54px; height: 54px; }
+.mic.rec { animation: breathe .8s ease-in-out infinite; box-shadow: 0 0 0 10px rgba(255,111,145,.3), 0 6px 0 #d14b6e; }
+
+/* ice cream tracker + dessert */
+.tracker svg { height: 56px; width: auto; }
+.cone-big svg { height: min(46vh, 330px); width: auto; animation: popin .5s cubic-bezier(.3,1.6,.6,1); }
+.tops { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.top-btn { width: 76px; height: 76px; border-radius: 50%; background: var(--card); box-shadow: 0 6px 0 var(--card-edge); font-size: 2.8rem; display: grid; place-items: center; }
+.top-btn:active { transform: translateY(4px); }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; width: 100%; }
+.gallery div { background: var(--card); border-radius: 18px; display: grid; place-items: center; padding: 8px 0; box-shadow: 0 4px 0 var(--card-edge); }
+.gallery svg { height: 110px; width: auto; }
+.empty { font-size: 4rem; opacity: .5; }
+
+/* balloons */
+#sky { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }
+.balloon { position: absolute; bottom: -140px; width: 70px; pointer-events: auto; animation: rise 2.4s ease-in forwards; }
+.balloon svg { width: 100%; height: auto; display: block; }
+.balloon.pop { animation: popb .25s forwards; }
+@keyframes rise { to { transform: translateY(calc(-100vh - 180px)) translateX(var(--dx)); } }
+@keyframes popb { to { transform: scale(1.8); opacity: 0; } }
+
+/* parent sheet */
+.gear { opacity: .55; }
+.sheet {
+  position: fixed; inset: 0; z-index: 10; background: rgba(27,58,92,.45); display: flex; align-items: flex-end; justify-content: center;
+}
+.sheet-in {
+  background: var(--card); width: 100%; max-width: 560px; max-height: 88%; overflow-y: auto; border-radius: 24px 24px 0 0;
+  box-sizing: border-box; direction: rtl; text-align: right; font-size: 15px; line-height: 1.5;
+  padding-block: 18px max(18px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px));
+}
+.sheet h2 { font-size: 1.25rem; margin: 0 0 4px; }
+.sheet h3 { font-size: 1rem; margin: 16px 0 6px; }
+.sheet p { margin: 0 0 8px; color: var(--soft); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; direction: ltr; justify-content: flex-end; }
+.chip { border-radius: 999px; padding: 3px 10px; font-size: 14px; background: #eef4fa; color: var(--soft); }
+.chip.known { background: #fff3c4; color: var(--ink); font-weight: 600; }
+.chip.learning { background: #dcecff; color: var(--ink); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.pbtn { background: #eef4fa; border-radius: 12px; padding: 10px 14px; font-weight: 600; }
+.pbtn.on { background: var(--blue); color: #fff; }
+.slot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid #eef4fa; }
+.slot-label { font-weight: 600; min-width: 3.5em; }
+.slot .en { flex: 1; min-width: 0; color: var(--soft); font-size: 14px; text-align: left; }
+.slot-btns { display: flex; gap: 6px; margin-inline-start: auto; }
+.ibtn { width: 42px; height: 42px; border-radius: 50%; background: #eef4fa; font-size: 18px; display: grid; place-items: center; }
+.ibtn.rec { background: #e8383d; color: #fff; animation: pulse 1s infinite; }
+.wordrec { margin-top: 12px; }
+.wordrec b { font-size: 1.1rem; color: var(--blue-deep); }
+.chips.rtl { direction: rtl; justify-content: flex-start; }
+button.chip { font: inherit; font-size: 14px; }
+.warn { color: #a1123a !important; }
+.sheet input { font: inherit; font-size: 16px; padding: 9px 12px; border-radius: 12px; border: 2px solid var(--card-edge); width: 9em; letter-spacing: .08em; text-transform: uppercase; user-select: text; -webkit-user-select: text; }
+.warn:empty { display: none; }
+.pbtn.danger { background: #ffe1e8; color: #a1123a; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
+</style>
+<div id="app"></div>
+<div id="sky"></div>
+<script>
+// ---------- words ----------
+// Each word: id, w (shown word), e (emoji) or color/count, n (noun phrase for "This is ..."), q (question).
+const CATS = [
+  { id: 'animals', name: 'Animals', icon: '🐶', words: [
+    ['cat','🐱'],['dog','🐶'],['cow','🐮'],['duck','🦆'],['fish','🐟'],['pig','🐷'],
+    ['horse','🐴'],['rabbit','🐰'],['lion','🦁'],['elephant','🐘'],['monkey','🐵'],['bird','🐦'],['unicorn','🦄'] ] },
+  { id: 'colors', name: 'Colors', icon: '🌈', words: [
+    ['blue',null,'#2f80ed'],['red',null,'#e8383d'],['yellow',null,'#ffd400'],['green',null,'#2fb350'],
+    ['pink',null,'#ff8fc0'],['orange',null,'#ff8a1f'],['purple',null,'#8e4fd6'],['white',null,'#ffffff'],
+    ['black',null,'#222222'],['brown',null,'#8b5a2b'] ] },
+  { id: 'numbers', name: 'Numbers', icon: '🔢', words: [
+    ['one',null,null,1],['two',null,null,2],['three',null,null,3],['four',null,null,4],['five',null,null,5],
+    ['six',null,null,6],['seven',null,null,7],['eight',null,null,8],['nine',null,null,9],['ten',null,null,10] ] },
+  { id: 'go', name: 'Vehicles', icon: '✈️', words: [
+    ['car','🚗'],['bus','🚌'],['airplane','✈️'],['train','🚂'],['boat','⛵'],['bike','🚲'],['truck','🚚'],['helicopter','🚁'] ] },
+  { id: 'sweets', name: 'Yummy', icon: '🍦', words: [
+    ['ice cream','🍦','',0,'ice cream'],['cookie','🍪'],['cake','🎂'],['candy','🍬'],['chocolate','🍫','',0,'chocolate'],
+    ['lollipop','🍭'],['pizza','🍕','',0,'pizza'],['milk','🥛','',0,'milk'],['bread','🍞','',0,'bread'],['egg','🥚'] ] },
+  { id: 'fruit', name: 'Fruit', icon: '🍓', words: [
+    ['strawberry','🍓'],['banana','🍌'],['apple','🍎'],['orange','🍊'],['watermelon','🍉'],['pear','🍐'],
+    ['grapes','🍇','',0,'grapes','Where are the grapes?','These are grapes.'],['cherry','🍒'] ] },
+  { id: 'music', name: 'Music', icon: '🎸', words: [
+    ['guitar','🎸'],['drum','🥁'],['piano','🎹'],['trumpet','🎺'],['violin','🎻'],['saxophone','🎷'],['microphone','🎤'] ] },
+  { id: 'body', name: 'My body', icon: '👃', words: [
+    ['nose','👃'],['eyes','👀','',0,'eyes','Where are the eyes?','These are eyes.'],['mouth','👄'],['ear','👂'],
+    ['hand','✋'],['foot','🦶'],['tooth','🦷'] ] },
+  { id: 'shapes', name: 'Shapes', icon: '⭐', words: [
+    ['circle','🔵'],['square','🟦'],['triangle','🔺'],['star','⭐'],['heart','💙'],['diamond','🔷'] ] },
+  { id: 'clothes', name: 'Clothes', icon: '👕', words: [
+    ['hat','👒'],['shirt','👕'],['dress','👗'],['coat','🧥'],
+    ['shoes','👟','',0,'shoes','Where are the shoes?','These are shoes.'],['socks','🧦','',0,'socks','Where are the socks?','These are socks.'],
+    ['pants','👖','',0,'pants','Where are the pants?','These are pants.'] ] },
+  { id: 'toys', name: 'Toys', icon: '🧸', words: [
+    ['ball','⚽'],['teddy bear','🧸'],['balloon','🎈'],['kite','🪁'],['puzzle','🧩'],['yo-yo','🪀'] ] },
+  { id: 'sky', name: 'Outside', icon: '☀️', words: [
+    ['rainbow','🌈'],['sun','☀️','',0,'the sun','Where is the sun?'],['moon','🌙','',0,'the moon','Where is the moon?'],
+    ['cloud','☁️'],['rain','🌧️','',0,'rain'],['flower','🌸'],['tree','🌳'],['butterfly','🦋'] ] },
+  { id: 'feel', name: 'Feelings', icon: '😀', words: [
+    ['happy','😀','',0,'happy','Who is happy?','I am happy.'],['sad','😢','',0,'sad','Who is sad?','I am sad.'],
+    ['angry','😠','',0,'angry','Who is angry?','I am angry.'],['scared','😨','',0,'scared','Who is scared?','I am scared.'],
+    ['tired','😴','',0,'tired','Who is tired?','I am tired.'],['surprised','😮','',0,'surprised','Who is surprised?','I am surprised.'],
+    ['silly','😜','',0,'silly','Who is silly?','I am silly.'],['hot','🥵','',0,'hot','Who is hot?','I am hot.'],
+    ['cold','🥶','',0,'cold','Who is cold?','I am cold.'] ] },
+  { id: 'family', name: 'Family', icon: '👨‍👩‍👧', words: [
+    ['mommy','👩','',0,'mommy','Where is mommy?'],['daddy','👨','',0,'daddy','Where is daddy?'],
+    ['baby','👶'],['sister','👧','',0,'my sister','Where is my sister?'],['brother','👦','',0,'my brother','Where is my brother?'],
+    ['grandma','👵','',0,'grandma','Where is grandma?'],['grandpa','👴','',0,'grandpa','Where is grandpa?'] ] },
+  { id: 'kitchen', name: 'Kitchen', icon: '🥄', words: [
+    ['spoon','🥄'],['cup','☕'],['plate','🍽️'],['bowl','🥣'],['pan','🍳'],['teapot','🫖'],['bottle','🍼'] ] },
+];
+CATS.forEach(c => { c.words = c.words.map(([w, e, color, count, n, q, learn]) => {
+  const word = { id: c.id + ':' + w, w, e, color: color || null, count: count || 0, cat: c.id, own: !!learn };
+  if (count) {
+    word.n = w + (count === 1 ? ' strawberry' : ' strawberries');
+    word.learn = w.charAt(0).toUpperCase() + w.slice(1) + '! ' + word.n + '.';
+    word.q = count === 1 ? 'Where is one strawberry?' : 'Where are ' + word.n + '?';
+  } else if (color) {
+    word.learn = 'This is ' + w + '.'; word.q = 'Where is ' + w + '?';
+  } else {
+    word.n = n || ((/^[aeiou]/.test(w) ? 'an ' : 'a ') + w);
+    word.learn = learn || 'This is ' + word.n + '.';
+    word.q = q || 'Where is the ' + w + '?';
+  }
+  return word;
+}); });
+// Concepts are practised inside the picture categories, on a word she already knows:
+// "Where is the big duck?", "Which duck is up?", "Where is the duck in the box?".
+// A group opens once the group before it is known.
+const A = (el, style) => `<span style="${style}">${el}</span>`;
+const CONCEPT_CATS = ['animals', 'go', 'sweets', 'fruit', 'music', 'toys', 'kitchen', 'clothes', 'sky', 'shapes'];
+const GROUND = '<i class="ground"></i>';
+const CONCEPTS = [
+  [ { c: 'big', art: e => A(e, 'font-size:1.45em;bottom:0'), learn: n => `Big! A big ${n}.`, q: n => `Where is the big ${n}?` },
+    { c: 'small', art: e => A(e, 'font-size:.55em;bottom:0'), learn: n => `Small! A small ${n}.`, q: n => `Where is the small ${n}?` } ],
+  [ { c: 'up', art: e => A(e, 'font-size:.7em;top:0') + GROUND, learn: n => `Up! The ${n} is up.`, q: n => `Which ${n} is up?` },
+    { c: 'down', art: e => A(e, 'font-size:.7em;bottom:.08em') + GROUND, learn: n => `Down! The ${n} is down.`, q: n => `Which ${n} is down?` } ],
+  [ { c: 'in', art: e => A('📦', 'font-size:.95em;bottom:0') + A(e, 'font-size:.5em;bottom:.42em'), learn: n => `In! The ${n} is in the box.`, q: n => `Where is the ${n} in the box?` },
+    { c: 'on', art: e => A('📦', 'font-size:.8em;bottom:0') + A(e, 'font-size:.62em;bottom:.74em'), learn: n => `On! The ${n} is on the box.`, q: n => `Where is the ${n} on the box?` },
+    { c: 'under', art: e => A('☂️', 'font-size:.95em;top:0') + A(e, 'font-size:.55em;bottom:0'), learn: n => `Under! The ${n} is under the umbrella.`, q: n => `Where is the ${n} under the umbrella?` } ],
+];
+function conceptWord(v, obj) {
+  return { id: 'concept:' + v.c, w: v.c, art: v.art(obj.e), learn: v.learn(obj.w), q: v.q(obj.w), concept: true };
+}
+const WORD = {}; CATS.forEach(c => c.words.forEach(w => WORD[w.id] = w));
+
+// ---------- saved progress (this device only) ----------
+const KEY = 'blue-pup-words-v1';
+let S = { words: {}, desserts: [], slow: true };
+try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch (e) {}
+function saveLocal() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function save() { saveLocal(); Sync.push(); }
+function rec(id) { return S.words[id] || (S.words[id] = { box: 0, seen: 0, right: 0, wrong: 0 }); }
+const KNOWN = 3;
+function status(id) { const r = S.words[id]; if (!r || !r.seen) return 'new'; return r.box >= KNOWN ? 'known' : 'learning'; }
+
+// ---------- sound ----------
+let voice = null;
+function pickVoice() {
+  try {
+    const vs = speechSynthesis.getVoices().filter(v => /^en[-_]/i.test(v.lang));
+    voice = vs.find(v => /Samantha|Google US English|Karen|Moira|Tessa|Ava|Allison/i.test(v.name))
+      || vs.find(v => /en[-_]US/i.test(v.lang)) || vs[0] || null;
+  } catch (e) {}
+}
+try { speechSynthesis.onvoiceschanged = pickVoice; } catch (e) {}
+function say(text, then) {
+  // Some phones never fire onend, so continue after a timeout too (whichever comes first).
+  let fired = false;
+  const after = then && (() => { if (!fired) { fired = true; then(); } });
+  if (after) setTimeout(after, 1800);
+  try {
+    stopAll();
+    setTimeout(() => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US'; if (voice) u.voice = voice;
+      u.rate = S.slow ? 0.78 : 0.95; u.pitch = 1.15;
+      if (after) u.onend = after;
+      speechSynthesis.speak(u);
+    }, 60);
+  } catch (e) { if (after) setTimeout(after, 800); }
+}
+let ac = null;
+function tone(freqs, dur = 0.12, type = 'sine', gap = 0.09, vol = 0.18) {
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    freqs.forEach((f, i) => {
+      const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + i * gap;
+      o.type = type; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
+    });
+  } catch (e) {}
+}
+const sfx = {
+  yay: () => tone([523, 659, 784, 1047], 0.18, 'triangle', 0.09),
+  oops: () => tone([300, 240], 0.16, 'sine', 0.12, 0.12),
+  pop: () => tone([900 + Math.random() * 300], 0.06, 'square', 0, 0.08),
+  scoop: () => tone([660, 880], 0.1, 'sine', 0.06, 0.12),
+  fanfare: () => tone([523, 659, 784, 659, 784, 1047], 0.2, 'triangle', 0.13),
+};
+
+// ---------- family recordings (kept on this phone, in IndexedDB) ----------
+// Keys: learn:<word id>, q:<word id>, praise:<time>. A word without a recording uses the phone's voice.
+const clips = new Set(), decoded = {};
+let dbp = null, current = null;
+function db() {
+  return dbp || (dbp = new Promise((res, rej) => {
+    try {
+      const r = indexedDB.open('blue-pup-audio', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('clips');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    } catch (e) { rej(e); }
+  }));
+}
+function idb(mode, fn) {
+  return db().then(d => new Promise((res, rej) => {
+    const tx = d.transaction('clips', mode), r = fn(tx.objectStore('clips'));
+    tx.oncomplete = () => res(r && r.result); tx.onerror = () => rej(tx.error);
+  }));
+}
+idb('readonly', st => st.getAllKeys()).then(keys => (keys || []).forEach(k => clips.add(k))).catch(() => {});
+function putClip(key, blob, t) {
+  delete decoded[key];
+  return idb('readwrite', st => st.put(blob, key)).then(() => {
+    clips.add(key); (S.clipT || (S.clipT = {}))[key] = t || Date.now(); saveLocal();
+    if (!t) Sync.uploadClip(key, blob); // a new recording on this phone goes to the other phone too
+  });
+}
+function delClip(key, fromRemote) {
+  delete decoded[key];
+  return idb('readwrite', st => st.delete(key)).then(() => { clips.delete(key); if (!fromRemote) Sync.deleteClip(key); });
+}
+function stopAll() {
+  try { speechSynthesis.cancel(); } catch (e) {}
+  if (current) { try { current.stop(); } catch (e) {} current = null; }
+}
+function playClip(key, then) {
+  let fired = false;
+  const after = () => { if (!fired) { fired = true; if (then) then(); } };
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === 'suspended') ac.resume();
+  } catch (e) { return after(); }
+  const go = buf => {
+    stopAll();
+    const src = ac.createBufferSource(); src.buffer = buf; src.connect(ac.destination);
+    src.onended = after; src.start(); current = src;
+  };
+  if (decoded[key]) return go(decoded[key]);
+  idb('readonly', st => st.get(key)).then(b => b.arrayBuffer())
+    .then(ab => new Promise((res, rej) => ac.decodeAudioData(ab, res, rej)))
+    .then(buf => { decoded[key] = buf; go(buf); }).catch(after);
+}
+function playBlob(blob, then) {
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === 'suspended') ac.resume();
+    blob.arrayBuffer().then(ab => new Promise((res, rej) => ac.decodeAudioData(ab, res, rej))).then(buf => {
+      stopAll();
+      const src = ac.createBufferSource(); src.buffer = buf; src.connect(ac.destination);
+      src.onended = then; src.start(); current = src;
+    }).catch(then);
+  } catch (e) { then(); }
+}
+function speak(key, text, then) { if (clips.has(key)) playClip(key, then); else say(text, then); }
+function praise(fallback) {
+  const mine = [...clips].filter(k => k.startsWith('praise:'));
+  if (mine.length) playClip(pick(mine)); else say(fallback);
+}
+function startRec(onDone, maxMs = 8000) {
+  return navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    const mr = new MediaRecorder(stream), chunks = [];
+    mr.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    mr.onstop = () => { stream.getTracks().forEach(t => t.stop()); onDone(new Blob(chunks, { type: mr.mimeType || 'audio/webm' })); };
+    mr.start();
+    const timer = setTimeout(() => { if (mr.state === 'recording') mr.stop(); }, maxMs);
+    return { stop: () => { clearTimeout(timer); if (mr.state === 'recording') mr.stop(); } };
+  });
+}
+
+// ---------- sync between the parents' phones ----------
+// Works only on the real site, through the same Firebase family as the siblings' app (עיר המילים):
+//   families/{code}/data/little        progress and ice creams, as JSON text
+//   families/{code}/data/clip~{key}    one recording each (kind: 'little-clip', base64 audio)
+let onSync = null;
+const Sync = (() => {
+  const config = window.FIREBASE_CONFIG || null;
+  const SDK = 'https://www.gstatic.com/firebasejs/10.14.1/';
+  const FAM = 'vocab-city-family'; // shared with the siblings' app on the same phone
+  let db = null, uid = null, ready = null, listening = false, timer = null;
+  const family = () => { try { return localStorage.getItem(FAM); } catch (e) { return null; } };
+  const setFamily = c => { try { localStorage.setItem(FAM, c); } catch (e) {} };
+  const load = src => new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = rej; document.head.appendChild(el); });
+  const changed = () => { if (onSync) onSync(); };
+  function start() {
+    if (!config) return Promise.reject(new Error('no config'));
+    if (ready) return ready;
+    ready = (window.firebase ? Promise.resolve() : load(SDK + 'firebase-app-compat.js')
+      .then(() => Promise.all([load(SDK + 'firebase-auth-compat.js'), load(SDK + 'firebase-firestore-compat.js')])))
+      .then(() => {
+        if (!firebase.apps.length) firebase.initializeApp(config);
+        db = firebase.firestore();
+        return new Promise((res, rej) => {
+          const off = firebase.auth().onAuthStateChanged(u => { if (u) { off(); uid = u.uid; res(); } });
+          firebase.auth().signInAnonymously().catch(rej);
+        });
+      });
+    ready.catch(() => { ready = null; });
+    return ready;
+  }
+  const fam = () => db.collection('families').doc(family());
+  const activity = r => r ? (r.seen || 0) + (r.right || 0) + (r.wrong || 0) : 0;
+  // The phone that has seen more of a word wins for that word; ice creams from both phones are kept.
+  function merge(remote) {
+    let diff = false;
+    Object.entries(remote.words || {}).forEach(([id, r]) => {
+      if (activity(r) > activity(S.words[id])) { S.words[id] = r; diff = true; }
+    });
+    const have = new Set(S.desserts.map(d => d.d));
+    (remote.desserts || []).forEach(d => { if (!have.has(d.d)) { S.desserts.push(d); diff = true; } });
+    if (diff) { S.desserts.sort((a, b) => a.d - b.d); S.desserts = S.desserts.slice(-80); saveLocal(); }
+    return diff;
+  }
+  function b64ToBlob(b64, type) {
+    const bin = atob(b64), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type });
+  }
+  const blobToB64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+  function listen() {
+    if (listening) return; listening = true;
+    fam().collection('data').doc('little').onSnapshot(snap => {
+      if (snap.exists && merge(JSON.parse(snap.data().json))) changed();
+    }, () => {});
+    fam().collection('data').where('kind', '==', 'little-clip').onSnapshot(qs => qs.docChanges().forEach(ch => {
+      const d = ch.doc.data();
+      if (ch.type === 'removed') { if (clips.has(d.key)) delClip(d.key, true).then(changed); return; }
+      if (ch.doc.metadata.hasPendingWrites || ((S.clipT || {})[d.key] || 0) >= d.t) return;
+      putClip(d.key, b64ToBlob(d.b64, d.type), d.t).then(changed).catch(() => {});
+    }), () => {});
+  }
+  function push() {
+    if (!config || !family()) return;
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      try {
+        await start();
+        const ref = fam().collection('data').doc('little');
+        await db.runTransaction(async tx => {
+          const snap = await tx.get(ref);
+          if (snap.exists && merge(JSON.parse(snap.data().json))) changed();
+          tx.set(ref, { json: JSON.stringify({ words: S.words, desserts: S.desserts }), t: Date.now() });
+        });
+      } catch (e) { timer = setTimeout(push, 15000); }
+    }, 2500);
+  }
+  async function uploadClip(key, blob) {
+    if (!config || !family()) return;
+    try {
+      await start();
+      await fam().collection('data').doc('clip~' + key).set({ kind: 'little-clip', key, type: blob.type, b64: await blobToB64(blob), t: S.clipT[key] });
+    } catch (e) {}
+  }
+  async function deleteClip(key) {
+    if (!config || !family()) return;
+    try { await start(); await fam().collection('data').doc('clip~' + key).delete(); } catch (e) {}
+  }
+  async function join(code) {
+    await db.collection('families').doc(code).collection('members').doc(uid).set({ joined: Date.now() });
+    setFamily(code);
+    listen(); push();
+    // Send up what this phone already recorded.
+    for (const key of clips) {
+      const blob = await idb('readonly', st => st.get(key)).catch(() => null);
+      if (blob) await uploadClip(key, blob);
+    }
+    return code;
+  }
+  function code8() {
+    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return Array.from(crypto.getRandomValues(new Uint32Array(8)), x => abc[x % abc.length]).join('');
+  }
+  if (config && family()) {
+    start().then(() => fam().collection('members').doc(uid).set({ joined: Date.now() })).then(() => { listen(); push(); }).catch(() => {});
+  }
+  window.addEventListener('online', () => { if (config && family()) start().then(() => { listen(); push(); }).catch(() => {}); });
+  return {
+    available: !!config, family, push, uploadClip, deleteClip,
+    async joinFamily(raw) {
+      const code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (code.length !== 8) throw new Error('bad code');
+      await start(); return join(code);
+    },
+    async createFamily() {
+      await start();
+      for (let i = 0; i < 5; i++) {
+        const code = code8();
+        try { await db.collection('families').doc(code).set({ created: Date.now() }); } catch (e) { continue; }
+        return join(code);
+      }
+      throw new Error('create failed');
+    },
+  };
+})();
+
+// ---------- art ----------
+const ICON = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="#1a5fbf" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>',
+  speak: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="#fff"><path d="M6 4l15 8-15 8z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>',
+  next: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="#5f7a96" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>',
+  mic: '<svg viewBox="0 0 24 24" fill="#fff"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5"/><path d="M5 11a7 7 0 0014 0M12 18v3.5M8.5 21.5h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  cones: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5.5" fill="#ff8fc0"/><path d="M7 11h10l-5 11z" fill="#e7a95a"/></svg>',
+};
+// Original blue puppy with floppy ears (our own character).
+function pup(cls = '') {
+  return `<svg class="pup ${cls}" viewBox="0 0 120 120" aria-hidden="true">
+    <ellipse cx="60" cy="112" rx="34" ry="5" fill="#b9d7f5"/>
+    <ellipse cx="27" cy="58" rx="15" ry="27" fill="#1a5fbf" transform="rotate(18 27 58)"/>
+    <ellipse cx="93" cy="58" rx="15" ry="27" fill="#1a5fbf" transform="rotate(-18 93 58)"/>
+    <circle cx="60" cy="60" r="40" fill="#5aa2f5"/>
+    <ellipse cx="60" cy="78" rx="24" ry="18" fill="#e9f4ff"/>
+    <circle cx="45" cy="54" r="6" fill="#1b3a5c"/><circle cx="75" cy="54" r="6" fill="#1b3a5c"/>
+    <circle cx="47" cy="52" r="2" fill="#fff"/><circle cx="77" cy="52" r="2" fill="#fff"/>
+    <ellipse cx="60" cy="70" rx="8" ry="5.5" fill="#1b3a5c"/>
+    <path d="M52 81q8 8 16 0" stroke="#1b3a5c" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M57 84q3 9 6 0" fill="#ff6f91"/>
+    <circle cx="36" cy="72" r="5" fill="#ff9fb8" opacity=".6"/><circle cx="84" cy="72" r="5" fill="#ff9fb8" opacity=".6"/>
+  </svg>`;
+}
+const FLAVORS = ['#7db7ff', '#ff9fc4', '#fff0c2', '#a8694b', '#9fe6c6', '#ffd36e'];
+function cone(scoops, top, size = 1) {
+  const n = scoops.length, r = 26, step = 30, h = 120 + Math.max(n - 1, 0) * step + (top ? 34 : 6);
+  const base = h - 120;
+  let s = `<svg viewBox="0 0 100 ${h}" aria-hidden="true">`;
+  s += `<path d="M22 ${base + 34} L50 ${h - 4} L78 ${base + 34} Z" fill="#e7a95a" stroke="#c98a3c" stroke-width="2.5" stroke-linejoin="round"/>`;
+  s += `<path d="M30 ${base + 48} L68 ${base + 60} M27 ${base + 40} L72 ${base + 54} M40 ${base + 36} L60 ${base + 84} M58 ${base + 36} L45 ${base + 84}" stroke="#c98a3c" stroke-width="1.6"/>`;
+  if (!n) s += `<path d="M24 ${base + 34} Q50 ${base + 24} 76 ${base + 34}" stroke="#c98a3c" stroke-width="2" fill="none"/>`;
+  scoops.forEach((c, i) => {
+    const y = base + 26 - i * step, x = 50 + (i % 2 ? 3 : -3);
+    s += `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="rgba(0,0,0,.12)" stroke-width="2"/>`;
+    s += `<path d="M${x - 22} ${y + 8} q6 9 11 0 q6 10 11 0 q6 9 11 0 q5 8 10 0" fill="${c}"/>`;
+    s += `<circle cx="${x - 9}" cy="${y - 9}" r="5" fill="#fff" opacity=".45"/>`;
+  });
+  if (top) s += `<text x="50" y="${base + 26 - (n - 1) * step - 16}" font-size="34" text-anchor="middle">${top}</text>`;
+  return s + '</svg>';
+}
+function pic(w) {
+  if (w.color) return `<span class="blob ${w.color === '#ffffff' ? 'light' : ''}" style="--c:${w.color}"></span>`;
+  if (w.art) return `<span class="pic art">${w.art}</span>`;
+  if (w.count) return `<span class="pic count">${'🍓'.repeat(w.count)}</span>`;
+  return `<span class="pic">${w.e}</span>`;
+}
+
+// ---------- screens ----------
+const app = document.getElementById('app'), sky = document.getElementById('sky');
+let round = null;
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+function bar(middle = '', withHome = true, right = '') {
+  return `<div class="bar">${withHome ? `<button class="round-btn" data-go="home" aria-label="home">${ICON.home}</button>` : '<span style="width:56px"></span>'}
+    <div class="grow">${middle}</div>${right || '<span style="width:56px"></span>'}</div>`;
+}
+
+function startScreen() {
+  app.innerHTML = `<div class="stage">${pup()}<p class="hello">Hello!</p>
+    <button class="play" id="go" aria-label="play">${ICON.play}</button></div>`;
+  document.getElementById('go').onclick = () => {
+    pickVoice(); tone([1], 0.01, 'sine', 0, 0.001);
+    say("Hello! Let's play!"); home();
+  };
+}
+
+function home() {
+  stopAll(); onSync = home;
+  const tiles = CATS.map(c => {
+    const st = c.words.map(w => status(w.id));
+    const preview = c.id === 'numbers' ? '<span style="font-family:var(--display);font-weight:800;color:#2f80ed">123</span>' : c.icon;
+    return `<button class="cat" data-cat="${c.id}"><span class="pic">${preview}</span>
+      <span class="name">${c.name}</span>
+      <span class="stars">${st.map(s => `<i class="${s === 'known' ? 'on' : ''}"></i>`).join('')}</span></button>`;
+  }).join('');
+  app.innerHTML = bar(pup('small'), false,
+      `<button class="round-btn gear" id="gear" aria-label="parents (press and hold)">${ICON.gear}</button>`) +
+    `<div class="stage home-stage"><div class="home-scroll"><div class="cats">${tiles}
+      <button class="cat" data-go="gallery"><span class="pic">${ICON.cones.replace('<svg', '<svg style="width:3.4rem;height:3.4rem"')}</span>
+      <span class="name">${S.desserts.length}</span></button></div></div></div>`;
+  app.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => startRound(b.dataset.cat));
+  holdToOpen(document.getElementById('gear'));
+}
+
+function startRound(catId) {
+  onSync = null;
+  const c = CATS.find(x => x.id === catId);
+  const byNeed = c.words.slice().sort((a, b) => {
+    const ra = S.words[a.id], rb = S.words[b.id];
+    const ka = ra ? (ra.seen ? ra.box : 99) : 99, kb = rb ? (rb.seen ? rb.box : 99) : 99; // unseen go after weak ones
+    return ka - kb;
+  });
+  const learning = byNeed.filter(w => status(w.id) === 'learning');
+  const fresh = c.words.filter(w => status(w.id) === 'new');
+  const known = shuffle(c.words.filter(w => status(w.id) === 'known'));
+  // Up to 4 words: weak ones first, then up to 2 new (3 when starting), then known ones for review.
+  // Up to 4 words: the 2 weakest, new ones, and one known word for review when there is one.
+  const reserve = known.length ? 1 : 0;
+  const set = learning.slice(0, 2);
+  for (const w of fresh) if (set.length < 4 - reserve) set.push(w);
+  for (const w of known.concat(learning, fresh)) if (set.length < 4 && !set.includes(w)) set.push(w);
+  const teach = set.filter(w => status(w.id) !== 'known');
+  round = { cat: c, set, teach: teach.length ? teach : set, i: 0, scoops: [], concepts: [] };
+  // Concept practice on a word she knows well.
+  const obj = CONCEPT_CATS.includes(c.id) && shuffle(c.words.filter(w => !w.own && (S.words[w.id] || {}).box >= 2))[0];
+  if (obj) {
+    const groupKnown = g => g.every(v => status('concept:' + v.c) === 'known');
+    let open = 0; while (open < CONCEPTS.length - 1 && groupKnown(CONCEPTS[open])) open++;
+    const g = groupKnown(CONCEPTS[open]) || Math.random() < 0.3 ? CONCEPTS[Math.floor(Math.random() * (open + 1))] : CONCEPTS[open];
+    round.concepts = g.map(v => conceptWord(v, obj));
+    if (round.concepts.some(w => status(w.id) !== 'known')) round.teach = round.teach.concat([{ lesson: round.concepts }]);
+  }
+  say(c.name + '!', () => learnStep());
+}
+
+function learnStep() {
+  const w = round.teach[round.i];
+  if (!w) { round.i = 0; return quizStart(); }
+  const dots = round.teach.map((_, i) => `<i class="${i <= round.i ? 'on' : ''}"></i>`).join('');
+  if (w.lesson) return lessonStep(w.lesson, dots);
+  rec(w.id).seen++; save();
+  app.innerHTML = bar(`<div class="dots">${dots}</div>`) +
+    `<div class="stage"><button class="big-card" id="card" aria-label="${w.w}">${pic(w)}</button>
+     <p class="word">${w.w}</p>
+     <button class="next" id="next" aria-label="next">${ICON.next}</button></div>`;
+  const again = () => speak('learn:' + w.id, w.learn + ' ' + cap(w.w) + '!');
+  again();
+  document.getElementById('card').onclick = again;
+  document.getElementById('next').onclick = () => { round.i++; learnStep(); };
+}
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+// The concept pictures side by side; each one says its own word when tapped.
+function lessonStep(words, dots) {
+  words.forEach(w => { rec(w.id).seen++; }); save();
+  app.innerHTML = bar(`<div class="dots">${dots}</div>`) +
+    `<div class="stage"><div class="opts" style="grid-template-columns:repeat(${words.length},1fr)">
+      ${words.map((w, i) => `<button class="opt lesson" data-i="${i}" aria-label="${w.w}">${pic(w)}<b>${w.w}</b></button>`).join('')}</div>
+     <button class="next" id="next" aria-label="next">${ICON.next}</button></div>`;
+  say(words.map(w => w.learn).join(' '));
+  app.querySelectorAll('.lesson').forEach(b => b.onclick = () => say(words[+b.dataset.i].learn));
+  document.getElementById('next').onclick = () => { round.i++; learnStep(); };
+}
+
+function quizStart() {
+  const a = shuffle(round.set), b = shuffle(round.set);
+  if (b[0] === a[a.length - 1]) b.push(b.shift());
+  round.qs = a.concat(b); round.qi = 0;
+  // Two concept questions, at random places after the first one.
+  shuffle(round.concepts).slice(0, 2).forEach(w => round.qs.splice(1 + Math.floor(Math.random() * round.qs.length), 0, w));
+  quizStep();
+}
+
+function quizStep() {
+  sky.innerHTML = ''; // balloons from the last answer must not cover the new pictures
+  const target = round.qs[round.qi];
+  if (!target) return sayIt();
+  const pool = (target.concept ? round.concepts : round.cat.words).filter(w => w !== target);
+  const seenPool = pool.filter(w => round.set.includes(w) || status(w.id) !== 'new');
+  const others = shuffle(seenPool.length >= 2 ? seenPool : pool).slice(0, 2);
+  const opts = shuffle([target, ...others]);
+  let misses = 0, done = false;
+  app.innerHTML = bar(`<span class="tracker">${cone(round.scoops)}</span>`) +
+    `<div class="stage"><button class="ask" id="ask"><span class="round-btn">${ICON.speak}</span><span>${target.w}</span></button>
+     <div class="opts" style="grid-template-columns:repeat(${opts.length},1fr)">${opts.map((w, i) => `<button class="opt" data-i="${i}" aria-label="${w.w}">${pic(w)}</button>`).join('')}</div></div>`;
+  const ask = () => speak('q:' + target.id, target.q);
+  ask();
+  document.getElementById('ask').onclick = ask;
+  app.querySelectorAll('.opt').forEach(btn => btn.onclick = () => {
+    if (done) return;
+    const w = opts[+btn.dataset.i];
+    const r = rec(target.id);
+    if (w === target) {
+      done = true;
+      btn.classList.remove('hint'); btn.classList.add('right');
+      if (misses === 0) { r.box = Math.min(r.box + 1, 5); r.right++; } else r.wrong++;
+      save();
+      sfx.yay(); balloons(misses ? 2 : 4);
+      round.scoops.push(FLAVORS[round.scoops.length % FLAVORS.length]);
+      praise(pick(['Yes!', 'Great job!', 'Hooray!', 'Well done!', 'Yummy!']) + ' ' + cap(target.n || target.w) + '!');
+      setTimeout(() => { sfx.scoop(); const t = app.querySelector('.tracker'); if (t) t.innerHTML = cone(round.scoops); }, 350);
+      setTimeout(() => { round.qi++; quizStep(); }, 2300);
+    } else {
+      misses++;
+      if (misses === 1) r.box = Math.max(0, r.box - 1);
+      save();
+      btn.classList.remove('wrong'); void btn.offsetWidth; btn.classList.add('wrong'); sfx.oops();
+      if (misses >= 2) {
+        app.querySelectorAll('.opt').forEach(o => { if (opts[+o.dataset.i] !== target) o.classList.add('faded'); else o.classList.add('hint'); });
+      }
+      speak('q:' + target.id, 'Try again! ' + target.q);
+    }
+  });
+}
+
+// Last step: a picture she already knows, and she says the word. Her voice plays back, then the right word.
+// Nothing is graded: a 4-year-old's speech is too hard to judge automatically.
+function sayIt() {
+  sky.innerHTML = '';
+  const w = round.set.find(x => (S.words[x.id] || {}).box >= 2);
+  if (!w) return dessert();
+  app.innerHTML = bar(`<span class="tracker">${cone(round.scoops)}</span>`) +
+    `<div class="stage"><button class="ask" id="ask"><span class="round-btn">${ICON.speak}</span><span>What is this?</span></button>
+     <div class="big-card small-card">${pic(w)}</div>
+     <button class="mic" id="mic" aria-label="say it">${ICON.mic}</button>
+     <button class="next" id="next" aria-label="next" hidden>${ICON.next}</button></div>`;
+  const ask = () => say('What is this?');
+  ask();
+  document.getElementById('ask').onclick = ask;
+  const mic = document.getElementById('mic'), next = document.getElementById('next');
+  let live = null, done = false;
+  const answer = () => {
+    done = true; mic.hidden = true; next.hidden = false;
+    sfx.yay(); balloons(4);
+    say(cap(w.w) + '! ' + pick(['Great job!', 'Well done!', 'Hooray!']));
+  };
+  mic.onclick = () => {
+    if (done) return;
+    if (live) { live.stop(); return; }
+    stopAll();
+    startRec(blob => { live = null; mic.classList.remove('rec'); playBlob(blob, answer); }, 3500)
+      .then(r => { live = r; mic.classList.add('rec'); })
+      .catch(() => { mic.classList.add('rec'); setTimeout(() => { mic.classList.remove('rec'); answer(); }, 2500); }); // no microphone: just give her time to say it
+  };
+  next.onclick = dessert;
+}
+
+function dessert() {
+  sky.innerHTML = '';
+  sfx.fanfare();
+  const scoops = round.scoops.length ? round.scoops : [FLAVORS[0]];
+  app.innerHTML = bar() + `<div class="stage"><div class="cone-big" id="cone">${cone(scoops)}</div>
+    <div class="tops" id="tops">${['🍓', '🍪', '🦄', '🌈'].map(t => `<button class="top-btn" data-t="${t}" aria-label="topping">${t}</button>`).join('')}</div></div>`;
+  say('Look! Your ice cream! Pick a topping!');
+  app.querySelectorAll('.top-btn').forEach(b => b.onclick = () => {
+    const t = b.dataset.t;
+    S.desserts.push({ s: scoops, t, d: Date.now() }); if (S.desserts.length > 80) S.desserts.shift(); save();
+    document.getElementById('cone').innerHTML = cone(scoops, t);
+    document.getElementById('tops').innerHTML = `<button class="next" id="done" aria-label="home">${ICON.home.replace(/#1a5fbf/g, '#fff')}</button>`;
+    sfx.yay(); balloons(6); say('Yummy! Great job!');
+    document.getElementById('done').onclick = home;
+  });
+}
+
+function gallery() {
+  onSync = gallery;
+  const items = S.desserts.slice().reverse().map(d => `<div>${cone(d.s, d.t)}</div>`).join('');
+  app.innerHTML = bar() + `<div class="stage home-stage"><div class="home-scroll">${items ? `<div class="gallery">${items}</div>` : `<div class="stage"><span class="empty">🍦</span></div>`}</div></div>`;
+  say(S.desserts.length ? 'Your ice creams!' : "Let's make ice cream!");
+}
+
+// ---------- balloons ----------
+const BALLOON = ['#2f80ed', '#5aa2f5', '#1a5fbf', '#8cc4ff'];
+function balloons(n) {
+  for (let i = 0; i < n; i++) {
+    const b = document.createElement('button');
+    const c = BALLOON[i % BALLOON.length];
+    b.className = 'balloon'; b.setAttribute('aria-label', 'balloon');
+    b.style.left = (8 + Math.random() * 74) + '%';
+    b.style.setProperty('--dx', (Math.random() * 60 - 30) + 'px');
+    b.style.animationDelay = (i * 0.18) + 's';
+    b.innerHTML = `<svg viewBox="0 0 60 110"><path d="M30 70 q-4 14 2 22 q6 8 -2 18" stroke="#5f7a96" stroke-width="1.5" fill="none"/>
+      <ellipse cx="30" cy="34" rx="25" ry="31" fill="${c}"/><path d="M26 64 h8 l-4 6z" fill="${c}"/>
+      <ellipse cx="21" cy="22" rx="5" ry="9" fill="#fff" opacity=".45"/></svg>`;
+    b.onpointerdown = e => { e.stopPropagation(); sfx.pop(); b.classList.add('pop'); setTimeout(() => b.remove(), 260); };
+    b.addEventListener('animationend', e => { if (e.animationName === 'rise') b.remove(); });
+    sky.appendChild(b);
+  }
+}
+
+// ---------- parents (press and hold the gear) ----------
+function holdToOpen(el) {
+  let t = null;
+  const start = () => { t = setTimeout(parents, 1200); };
+  const stop = () => clearTimeout(t);
+  el.addEventListener('pointerdown', start); ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => el.addEventListener(ev, stop));
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+const HE = { animals: 'חיות', colors: 'צבעים', numbers: 'מספרים', go: 'כלי תחבורה', sweets: 'מתוקים ואוכל', fruit: 'פירות', music: 'כלי נגינה', body: 'הגוף', shapes: 'צורות', clothes: 'בגדים', toys: 'צעצועים', feel: 'רגשות', sky: 'בחוץ', family: 'משפחה', kitchen: 'מטבח' };
+function parents() {
+  const total = Object.keys(WORD).length, known = Object.keys(WORD).filter(id => status(id) === 'known').length;
+  const el = document.createElement('div');
+  el.className = 'sheet';
+  el.innerHTML = `<div class="sheet-in"><h2>אזור הורים</h2>
+    <p>מילים שהיא יודעת: ${known} מתוך ${total}. מילה נחשבת ידועה אחרי 3 תשובות נכונות בניסיון ראשון. צהוב = יודעת, כחול = בלמידה, אפור = עוד לא ראתה.</p>
+    <h3>גדול/קטן, למעלה/למטה, בתוך/על/מתחת</h3><p>מתורגל בתוך הקטגוריות, על מילים שהיא כבר יודעת. כל זוג נפתח כשהקודם ידוע.</p>
+    <div class="chips">${CONCEPTS.flat().map(v => `<span class="chip ${status('concept:' + v.c)}">${v.c}</span>`).join('')}</div>
+    ${CATS.map(c => `<h3>${HE[c.id]}</h3><div class="chips">${c.words.map(w => `<span class="chip ${status(w.id)}">${w.w}</span>`).join('')}</div>`).join('')}
+    <h3>הקראה</h3><div class="row"><button class="pbtn ${S.slow ? 'on' : ''}" data-slow="1">איטית</button><button class="pbtn ${S.slow ? '' : 'on'}" data-slow="0">רגילה</button>
+      <button class="pbtn" id="test">בדיקת קול</button></div>
+    <p id="vinfo" style="margin-top:8px"></p>
+    <h3>הקלטות</h3><p>אתם יכולים להקליט את המילים ואת החיזוקים בקול שלכם.</p>
+    ${Sync.available ? `<h3>סנכרון בין הטלפונים</h3>${Sync.family()
+      ? `<p>הטלפון מחובר למשפחה, וההתקדמות וההקלטות מסתנכרנות. קוד המשפחה: <b dir="ltr">${Sync.family()}</b>. בטלפון השני פותחים את אזור ההורים ומקלידים את אותו הקוד.</p>`
+      : `<p>כדי שההתקדמות וההקלטות יהיו זהות בשני הטלפונים: בטלפון הראשון לוחצים "משפחה חדשה", ובטלפון השני מקלידים את הקוד שמופיע. אם יש לכם כבר קוד משפחה מעיר המילים, אפשר להשתמש בו.</p>
+        <div class="row"><input id="famcode" dir="ltr" maxlength="9" placeholder="ABCD2345" autocomplete="off"><button class="pbtn on" id="join">חיבור</button><button class="pbtn" id="create">משפחה חדשה</button></div>`}
+      <p class="warn" id="syncmsg"></p>` : ''}
+    <div class="row"><button class="pbtn on" id="recs">🎙 להקלטות</button></div>
+    <div class="row"><button class="pbtn danger" id="reset">איפוס התקדמות</button><button class="pbtn on" id="close">סגירה</button></div></div>`;
+  document.body.appendChild(el);
+  pickVoice();
+  el.querySelector('#vinfo').textContent = voice ? 'קול: ' + voice.name : 'לא נמצא קול אנגלי במכשיר. בהגדרות הטלפון אפשר להוריד קול אנגלי.';
+  el.querySelectorAll('[data-slow]').forEach(b => b.onclick = () => { S.slow = b.dataset.slow === '1'; save(); el.remove(); parents(); });
+  el.querySelector('#test').onclick = () => say('Where is the cat?');
+  el.querySelector('#close').onclick = () => { el.remove(); home(); };
+  el.querySelector('#recs').onclick = () => { el.remove(); recordings(); };
+  const syncMsg = t => { const m = el.querySelector('#syncmsg'); if (m) m.textContent = t; };
+  const joined = () => { el.remove(); parents(); };
+  const jb = el.querySelector('#join'), cb = el.querySelector('#create');
+  if (jb) jb.onclick = () => { syncMsg('מתחבר...'); Sync.joinFamily(el.querySelector('#famcode').value).then(joined).catch(() => syncMsg('הקוד לא נכון או שאין אינטרנט. קוד המשפחה הוא 8 תווים.')); };
+  if (cb) cb.onclick = () => { syncMsg('יוצר משפחה...'); Sync.createFamily().then(joined).catch(() => syncMsg('לא הצלחתי ליצור משפחה. בדקו שיש אינטרנט ונסו שוב.')); };
+  el.onclick = e => { if (e.target === el) { el.remove(); home(); } };
+  const reset = el.querySelector('#reset');
+  reset.onclick = () => {
+    if (reset.dataset.sure) { S.words = {}; S.desserts = []; save(); el.remove(); home(); return; }
+    reset.dataset.sure = '1'; reset.textContent = 'בטוח? לחיצה נוספת מוחקת הכול';
+  };
+}
+
+let recCat = 'animals';
+function recordings() {
+  const el = document.createElement('div');
+  el.className = 'sheet';
+  document.body.appendChild(el);
+  let live = null, msg = '';
+  const slot = (key, label, text) => `<div class="slot"><span class="slot-label">${label}</span>
+      <span class="en" dir="ltr">${text}</span>
+      <span class="slot-btns"><button class="ibtn ${live && live.key === key ? 'rec' : ''}" data-rec="${key}" aria-label="record">${live && live.key === key ? '■' : '🎙'}</button>
+      ${clips.has(key) ? `<button class="ibtn" data-play="${key}" aria-label="play">▶</button><button class="ibtn" data-del="${key}" aria-label="delete">🗑</button>` : ''}</span></div>`;
+  const draw = () => {
+    const c = CATS.find(x => x.id === recCat);
+    const praises = [...clips].filter(k => k.startsWith('praise:')).sort();
+    const count = cat => cat.words.filter(w => clips.has('learn:' + w.id) || clips.has('q:' + w.id)).length;
+    el.innerHTML = `<div class="sheet-in"><h2>הקלטות של אמא ואבא</h2>
+      <p>לוחצים על 🎙, מדברים, ולוחצים על ■ כדי לעצור. ההקלטה נשמרת בטלפון הזה ומתנגנת במקום הקול של הטלפון. מילה שלא הוקלטה תוקרא בקול של הטלפון, כך שאפשר להקליט רק חלק.</p>
+      <p class="warn">${msg}</p>
+      <h3>חיזוקים</h3><p>למשל "Great job!" או "Well done, sweetie!". בכל תשובה נכונה יתנגן אחד מהם באקראי.</p>
+      ${praises.map((k, i) => slot(k, 'חיזוק ' + (i + 1), '')).join('')}
+      ${slot(live && live.key.startsWith('praise:') && !clips.has(live.key) ? live.key : 'praise:new', 'חיזוק חדש', '')}
+      <h3>מילים</h3>
+      <div class="chips rtl">${CATS.map(x => `<button class="chip ${x.id === recCat ? 'known' : ''}" data-cat="${x.id}">${HE[x.id]} ${count(x)}/${x.words.length}</button>`).join('')}</div>
+      ${c.words.map(w => `<div class="wordrec"><b dir="ltr">${w.w}</b>
+        ${slot('learn:' + w.id, 'לימוד', w.learn + ' ' + cap(w.w) + '!')}
+        ${slot('q:' + w.id, 'שאלה', w.q)}</div>`).join('')}
+      <div class="row"><button class="pbtn on" id="rclose">סגירה</button></div></div>`;
+  };
+  draw(); onSync = () => { if (!live) draw(); };
+  el.onclick = e => {
+    if (e.target === el || e.target.id === 'rclose') { if (live) live.r.stop(); el.remove(); home(); return; }
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.cat) { recCat = b.dataset.cat; draw(); return; }
+    if (b.dataset.play) { playClip(b.dataset.play); return; }
+    if (b.dataset.del) { delClip(b.dataset.del).then(draw); return; }
+    if (b.dataset.rec) {
+      if (live) { live.r.stop(); return; }
+      let key = b.dataset.rec; if (key === 'praise:new') key = 'praise:' + Date.now();
+      stopAll(); msg = '';
+      startRec(blob => {
+        live = null;
+        if (blob.size < 500) { msg = 'ההקלטה יצאה ריקה. נסו שוב ודברו קרוב לטלפון.'; return draw(); }
+        putClip(key, blob).then(() => { draw(); playClip(key); }).catch(() => { msg = 'לא הצלחתי לשמור את ההקלטה.'; draw(); });
+      }).then(r => { live = { key, r }; draw(); }).catch(() => {
+        msg = 'אין גישה למיקרופון. צריך לאשר גישה למיקרופון כשהטלפון שואל. בתצוגה המקדימה של Claude ההקלטה לא עובדת, רק באפליקציה עצמה.';
+        draw();
+      });
+    }
+  };
+}
+
+app.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]'); if (!g) return;
+  if (g.dataset.go === 'home') home(); else if (g.dataset.go === 'gallery') gallery();
+});
+if ('serviceWorker' in navigator && /github\.io$/.test(location.hostname)) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+startScreen();
+</script>
+<!-- ARTIFACT-END -->
+</body>
+</html>
