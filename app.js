@@ -1121,20 +1121,35 @@
     const sp = session.spell;
     if (sp.idx >= sp.ids.length) { finishSession(); return; }
     const w = W[sp.ids[sp.idx]];
-    const hint = w.en[0] + ' _'.repeat(w.en.length - 1);
+    const first = w.en[0];
+    const rest = w.en.length - 1;
+    // The word is typed straight into the letter slots: an invisible input sits on top of them.
     h(`
       <main class="screen">
         <p class="tag">אתגר כתיב ${sp.idx + 1}/${sp.ids.length}</p>
         <div class="card prompt"><div class="he big">${esc(w.he)}</div>
-          <div class="hint" dir="ltr">${esc(hint)}</div><div class="muted small">${w.en.length} אותיות</div></div>
-        <input id="spell" class="spell-in" dir="ltr" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="type here">
+          <label class="slots" dir="ltr">
+            <span class="slot fixed">${esc(first)}</span>${'<span class="slot"></span>'.repeat(rest)}
+            <input id="spell" maxlength="${rest}" dir="ltr" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="המשך המילה באנגלית">
+          </label>
+          <div class="muted small">${w.en.length} אותיות · לוחצים על הקווים ומקלידים</div></div>
         <div id="feedback"><button class="btn primary big" id="check">בדיקה</button></div>
       </main>`);
     const input = document.getElementById('spell');
+    const slots = [...document.querySelectorAll('.slot:not(.fixed)')];
+    const paint = () => {
+      input.value = input.value.replace(/[^a-z]/gi, '').slice(0, rest);
+      slots.forEach((el, i) => {
+        el.textContent = input.value[i] || '';
+        el.classList.toggle('cur', i === input.value.length);
+      });
+    };
+    input.addEventListener('input', paint);
+    paint();
     input.focus();
     const check = () => {
-      const typed = input.value.trim().toLowerCase();
-      if (!typed) { input.focus(); return; }
+      const typed = (first + input.value).trim().toLowerCase();
+      if (typed.length < 2) { input.focus(); return; }
       const target = w.en.toLowerCase();
       const dist = editDistance(typed, target);
       const ok = dist === 0 || (dist === 1 && target.length >= 5);
