@@ -213,6 +213,7 @@ button:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
 .chips.rtl { direction: rtl; justify-content: flex-start; }
 button.chip { font: inherit; font-size: 14px; }
 .warn { color: #a1123a !important; }
+.sheet input#kidname { width: 10em; text-transform: none; letter-spacing: 0; }
 .sheet input { font: inherit; font-size: 16px; padding: 9px 12px; border-radius: 12px; border: 2px solid var(--card-edge); width: 9em; letter-spacing: .08em; text-transform: uppercase; user-select: text; -webkit-user-select: text; }
 .warn:empty { display: none; }
 .pbtn.danger { background: #ffe1e8; color: #a1123a; }
@@ -318,12 +319,17 @@ function status(id) { const r = S.words[id]; if (!r || !r.seen) return 'new'; re
 
 // ---------- sound ----------
 let voice = null;
-function pickVoice() {
+// English voices on this phone, the more natural-sounding ones first. A parent can pick one.
+const GOOD_VOICE = /Natural|Neural|Enhanced|Premium|Samantha|Ava|Allison|Google US English|Google UK English Female|Karen|Moira|Tessa|Serena|Jenny|Aria/i;
+function englishVoices() {
   try {
-    const vs = speechSynthesis.getVoices().filter(v => /^en[-_]/i.test(v.lang));
-    voice = vs.find(v => /Samantha|Google US English|Karen|Moira|Tessa|Ava|Allison/i.test(v.name))
-      || vs.find(v => /en[-_]US/i.test(v.lang)) || vs[0] || null;
-  } catch (e) {}
+    return speechSynthesis.getVoices().filter(v => /^en[-_]/i.test(v.lang))
+      .sort((a, b) => (GOOD_VOICE.test(b.name) - GOOD_VOICE.test(a.name)) || (/en[-_]US/i.test(b.lang) - /en[-_]US/i.test(a.lang)));
+  } catch (e) { return []; }
+}
+function pickVoice() {
+  const vs = englishVoices();
+  voice = vs.find(v => v.name === S.voice) || vs[0] || null;
 }
 try { speechSynthesis.onvoiceschanged = pickVoice; } catch (e) {}
 function say(text, then) {
@@ -336,7 +342,7 @@ function say(text, then) {
     setTimeout(() => {
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'en-US'; if (voice) u.voice = voice;
-      u.rate = S.slow ? 0.78 : 0.95; u.pitch = 1.15;
+      u.rate = S.slow ? 0.8 : 0.95; u.pitch = 1.05;
       if (after) u.onend = after;
       speechSynthesis.speak(u);
     }, 60);
@@ -662,11 +668,11 @@ function bar(middle = '', withHome = true, right = '') {
 }
 
 function startScreen() {
-  app.innerHTML = `<div class="stage">${pup()}<p class="hello">Hello!</p>
+  app.innerHTML = `<div class="stage">${pup()}<p class="hello">Hello ${S.name || 'Gal'}!</p>
     <button class="play" id="go" aria-label="play">${ICON.play}</button></div>`;
   document.getElementById('go').onclick = () => {
     pickVoice(); tone([1], 0.01, 'sine', 0, 0.001);
-    say("Hello! Let's play!"); home();
+    speak('hello', `Hello ${S.name || 'Gal'}! Let's play!`); home();
   };
 }
 
@@ -992,21 +998,36 @@ function parents() {
     <div class="chips">${CONCEPTS.flat().map(v => `<span class="chip ${status('concept:' + v.c)}">${v.c}</span>`).join('')}</div>
     ${CATS.map(c => `<h3>${HE[c.id]}</h3><div class="chips">${c.words.map(w => `<span class="chip ${status(w.id)}">${w.w}</span>`).join('')}</div>`).join('')}
     <h3>הקראה</h3><div class="row"><button class="pbtn ${S.slow ? 'on' : ''}" data-slow="1">איטית</button><button class="pbtn ${S.slow ? '' : 'on'}" data-slow="0">רגילה</button>
-      <button class="pbtn" id="test">בדיקת קול</button></div>
+</div>
+    <h3>הקול</h3><p>לחיצה על קול משמיעה אותו ובוחרת בו. הקולות הטבעיים יותר מופיעים ראשונים. ההקלטות שלכם תמיד יתנגנו במקומו.</p>
+    <div class="chips" id="voices"></div>
     <p id="vinfo" style="margin-top:8px"></p>
-    <h3>הקלטות</h3><p>אתם יכולים להקליט את המילים ואת החיזוקים בקול שלכם.</p>
+    <h3>השם שלה</h3><div class="row"><input id="kidname" dir="ltr" maxlength="20" value="${S.name || 'Gal'}" autocomplete="off"><button class="pbtn" id="savename">שמירה</button></div>
+    <h3>הקלטות</h3><p>אתם יכולים להקליט את המילים ואת החיזוקים בקול שלכם, וגם את ה-"Hello" שבכניסה.</p>
+    <div class="row"><button class="pbtn on" id="recs">🎙 להקלטות</button></div>
     ${Sync.available ? `<h3>סנכרון בין הטלפונים</h3>${Sync.family()
       ? `<p>הטלפון מחובר למשפחה, וההתקדמות וההקלטות מסתנכרנות. קוד המשפחה: <b dir="ltr">${Sync.family()}</b>. בטלפון השני פותחים את אזור ההורים ומקלידים את אותו הקוד.</p>`
       : `<p>כדי שההתקדמות וההקלטות יהיו זהות בשני הטלפונים: בטלפון הראשון לוחצים "משפחה חדשה", ובטלפון השני מקלידים את הקוד שמופיע. אם יש לכם כבר קוד משפחה מעיר המילים, אפשר להשתמש בו.</p>
         <div class="row"><input id="famcode" dir="ltr" maxlength="9" placeholder="ABCD2345" autocomplete="off"><button class="pbtn on" id="join">חיבור</button><button class="pbtn" id="create">משפחה חדשה</button></div>`}
       <p class="warn" id="syncmsg"></p>` : ''}
-    <div class="row"><button class="pbtn on" id="recs">🎙 להקלטות</button></div>
     <div class="row"><button class="pbtn danger" id="reset">איפוס התקדמות</button><button class="pbtn on" id="close">סגירה</button></div></div>`;
   document.body.appendChild(el);
   pickVoice();
-  el.querySelector('#vinfo').textContent = voice ? 'קול: ' + voice.name : 'לא נמצא קול אנגלי במכשיר. בהגדרות הטלפון אפשר להוריד קול אנגלי.';
+  const drawVoices = () => {
+    const vs = englishVoices();
+    el.querySelector('#voices').innerHTML = vs.map((v, i) => `<button class="chip ${voice && v.name === voice.name ? 'known' : ''}" data-v="${i}">${v.name.replace(/^(Microsoft|Google|Apple)\s+/, '')}</button>`).join('');
+    el.querySelector('#vinfo').textContent = vs.length ? '' : 'לא נמצא קול אנגלי במכשיר. בהגדרות הטלפון, תחת "המרת טקסט לדיבור", אפשר להוריד קול אנגלי.';
+    el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
+      S.voice = vs[+b.dataset.v].name; saveLocal(); pickVoice(); drawVoices();
+      say(`Hello ${S.name || 'Gal'}! Where is the cat?`);
+    });
+  };
+  drawVoices();
+  el.querySelector('#savename').onclick = () => {
+    S.name = el.querySelector('#kidname').value.trim() || 'Gal'; saveLocal();
+    say(`Hello ${S.name}!`);
+  };
   el.querySelectorAll('[data-slow]').forEach(b => b.onclick = () => { S.slow = b.dataset.slow === '1'; save(); el.remove(); parents(); });
-  el.querySelector('#test').onclick = () => say('Where is the cat?');
   el.querySelector('#close').onclick = () => { el.remove(); home(); };
   el.querySelector('#recs').onclick = () => { el.remove(); recordings(); };
   const syncMsg = t => { const m = el.querySelector('#syncmsg'); if (m) m.textContent = t; };
@@ -1039,6 +1060,7 @@ function recordings() {
     el.innerHTML = `<div class="sheet-in"><h2>הקלטות של אמא ואבא</h2>
       <p>לוחצים על 🎙, מדברים, ולוחצים על ■ כדי לעצור. ההקלטה נשמרת בטלפון הזה ומתנגנת במקום הקול של הטלפון. מילה שלא הוקלטה תוקרא בקול של הטלפון, כך שאפשר להקליט רק חלק.</p>
       <p class="warn">${msg}</p>
+      <h3>בכניסה</h3>${slot('hello', 'שלום', `Hello ${S.name || 'Gal'}! Let's play!`)}
       <h3>חיזוקים</h3><p>למשל "Great job!" או "Well done, sweetie!". בכל תשובה נכונה יתנגן אחד מהם באקראי.</p>
       ${praises.map((k, i) => slot(k, 'חיזוק ' + (i + 1), '')).join('')}
       ${slot(live && live.key.startsWith('praise:') && !clips.has(live.key) ? live.key : 'praise:new', 'חיזוק חדש', '')}
