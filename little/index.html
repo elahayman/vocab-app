@@ -156,6 +156,8 @@ button:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; width: 100%; }
 .gallery div { background: var(--card); border-radius: 18px; display: grid; place-items: center; padding: 8px 0; box-shadow: 0 4px 0 var(--card-edge); }
 .gallery svg { height: 110px; width: auto; }
+.cones-btn { position: relative; }
+.cones-btn b { position: absolute; top: -4px; right: -4px; min-width: 24px; height: 24px; padding: 0 5px; box-sizing: border-box; border-radius: 12px; background: var(--berry); color: #fff; font-family: var(--display); font-size: 14px; line-height: 24px; }
 .empty { font-size: 4rem; opacity: .5; }
 
 /* balloons */
@@ -221,7 +223,7 @@ const CATS = [
     ['six',null,null,6],['seven',null,null,7],['eight',null,null,8],['nine',null,null,9],['ten',null,null,10] ] },
   { id: 'go', name: 'Vehicles', icon: '✈️', words: [
     ['car','🚗'],['bus','🚌'],['airplane','✈️'],['train','🚂'],['boat','⛵'],['bike','🚲'],['truck','🚚'],['helicopter','🚁'] ] },
-  { id: 'sweets', name: 'Yummy', icon: '🍦', words: [
+  { id: 'sweets', name: 'Yummy', icon: '🍪', words: [
     ['ice cream','🍦','',0,'ice cream'],['cookie','🍪'],['cake','🎂'],['candy','🍬'],['chocolate','🍫','',0,'chocolate'],
     ['lollipop','🍭'],['pizza','🍕','',0,'pizza'],['milk','🥛','',0,'milk'],['bread','🍞','',0,'bread'],['egg','🥚'] ] },
   { id: 'fruit', name: 'Fruit', icon: '🍓', words: [
@@ -630,11 +632,12 @@ function home() {
       <span class="name">${c.name}</span>
       <span class="stars">${st.map(s => `<i class="${s === 'known' ? 'on' : ''}"></i>`).join('')}</span></button>`;
   }).join('');
-  app.innerHTML = bar(pup('small'), false,
-      `<button class="round-btn gear" id="gear" aria-label="parents (press and hold)">${ICON.gear}</button>`) +
+  // Her ice cream gallery sits in the top corner, apart from the categories.
+  app.innerHTML = `<div class="bar"><button class="round-btn cones-btn" data-go="gallery" aria-label="my ice creams">${ICON.cones}${S.desserts.length ? `<b>${S.desserts.length}</b>` : ''}</button>
+      <div class="grow">${pup('small')}</div>
+      <button class="round-btn gear" id="gear" aria-label="parents (press and hold)">${ICON.gear}</button></div>` +
     `<div class="stage home-stage"><div class="home-scroll"><div class="cats">${tiles}
-      <button class="cat" data-go="gallery"><span class="pic">${ICON.cones.replace('<svg', '<svg style="width:3.4rem;height:3.4rem"')}</span>
-      <span class="name">${S.desserts.length}</span></button></div></div></div>`;
+</div></div></div>`;
   app.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => startRound(b.dataset.cat));
   holdToOpen(document.getElementById('gear'));
 }
@@ -802,8 +805,8 @@ function dessert() {
 function gallery() {
   onSync = gallery;
   const items = S.desserts.slice().reverse().map(d => `<div>${cone(d.s, d.t)}</div>`).join('');
-  app.innerHTML = bar() + `<div class="stage home-stage"><div class="home-scroll">${items ? `<div class="gallery">${items}</div>` : `<div class="stage"><span class="empty">🍦</span></div>`}</div></div>`;
-  say(S.desserts.length ? 'Your ice creams!' : "Let's make ice cream!");
+  app.innerHTML = bar() + `<div class="stage home-stage"><div class="home-scroll">${items ? `<div class="gallery">${items}</div>` : `<div class="stage">${pup()}<div class="cone-big">${cone([])}</div></div>`}</div></div>`;
+  say(S.desserts.length ? 'Your ice creams!' : 'Play a game, and make ice cream!');
 }
 
 // ---------- balloons ----------
