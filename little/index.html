@@ -174,6 +174,17 @@ button:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
 .piece.done { box-shadow: none; border-radius: 0; cursor: default; }
 .piece-in { position: absolute; display: grid; place-items: center; line-height: 1; }
 .jig.solved .board { box-shadow: 0 0 0 6px var(--mint), 0 6px 0 var(--card-edge); }
+.scene { position: relative; max-width: 100%; background: var(--card); border-radius: 26px; box-shadow: 0 6px 0 var(--card-edge); overflow: hidden; touch-action: none; }
+.scene .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 9%; background: #c7efd6; }
+.scene .cloud { position: absolute; left: 10%; top: 4%; font-size: 3.4rem; opacity: .8; }
+.scene .table { position: absolute; left: 15%; width: 70%; top: 45%; }
+.scene .table svg { display: block; }
+.scene .box { position: absolute; left: 50%; bottom: 5%; transform: translateX(-50%); font-size: 7rem; line-height: 1; z-index: 3; pointer-events: none; }
+.thing { position: absolute; line-height: 1; transform: translate(-50%, -50%); cursor: grab; touch-action: none; z-index: 2; filter: drop-shadow(0 4px 4px rgba(27,58,92,.25)); }
+.thing.held { transform: translate(-50%, -50%) scale(1.15); cursor: grabbing; }
+.thing.glide { transition: left .35s, top .35s; }
+.target { position: absolute; width: 26%; aspect-ratio: 1; border-radius: 50%; border: 4px dashed var(--sun); transform: translate(-50%, -50%); animation: pulse-ring 1s ease-in-out infinite; }
+@keyframes pulse-ring { 50% { transform: translate(-50%, -50%) scale(1.12); } }
 .cat.locked { opacity: .45; position: relative; }
 .cat .page { width: 100%; max-width: 140px; height: auto; }
 .lock { position: absolute; font-size: 2rem; top: 40%; }
@@ -213,6 +224,7 @@ button:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; direction: ltr; justify-content: flex-end; }
 .chip { border-radius: 999px; padding: 3px 10px; font-size: 14px; background: #eef4fa; color: var(--soft); }
 .chip.known { background: #fff3c4; color: var(--ink); font-weight: 600; }
+.chip.extra { outline: 1px dashed var(--card-edge); }
 .chip.learning { background: #dcecff; color: var(--ink); }
 .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .pbtn { background: #eef4fa; border-radius: 12px; padding: 10px 14px; font-weight: 600; }
@@ -287,7 +299,23 @@ const CATS = [
   { id: 'kitchen', name: 'Kitchen', icon: '🥄', words: [
     ['spoon','🥄'],['cup','☕'],['plate','🍽️'],['bowl','🥣'],['pan','🍳'],['teapot','🫖'],['bottle','🍼'] ] },
 ];
-CATS.forEach(c => { c.words = c.words.map(([w, e, color, count, n, q, learn]) => {
+// More words for a category open once she knows most of its first words.
+const EXTRA = {
+  animals: [['tiger','🐯'],['bear','🐻'],['frog','🐸'],['zebra','🦓'],['giraffe','🦒'],['penguin','🐧'],['turtle','🐢'],['owl','🦉'],['sheep','🐑'],['snake','🐍']],
+  go: [['rocket','🚀'],['motorcycle','🏍️'],['tractor','🚜'],['ambulance','🚑','',0,'an ambulance'],['fire truck','🚒'],['police car','🚓'],['scooter','🛴']],
+  sweets: [['donut','🍩'],['cupcake','🧁'],['popcorn','🍿','',0,'popcorn'],['pancake','🥞'],['honey','🍯','',0,'honey']],
+  fruit: [['pineapple','🍍'],['peach','🍑'],['lemon','🍋'],['kiwi','🥝'],['mango','🥭'],['coconut','🥥']],
+  music: [['banjo','🪕'],['bell','🔔'],['accordion','🪗','',0,'an accordion'],['headphones','🎧','',0,'headphones','Where are the headphones?','These are headphones.']],
+  body: [['tongue','👅'],['leg','🦵'],['arm','💪'],['finger','☝️']],
+  shapes: [['moon','🌙','',0,'a moon'],['cross','❌'],['oval','🥚','',0,'an oval']],
+  clothes: [['crown','👑'],['scarf','🧣'],['glasses','👓','',0,'glasses','Where are the glasses?','These are glasses.'],['gloves','🧤','',0,'gloves','Where are the gloves?','These are gloves.'],['boots','👢','',0,'boots','Where are the boots?','These are boots.']],
+  toys: [['robot','🤖'],['dice','🎲','',0,'dice','Where are the dice?','These are dice.'],['magic wand','🪄'],['blocks','🧱','',0,'blocks','Where are the blocks?','These are blocks.']],
+  sky: [['snow','❄️','',0,'snow'],['snowman','⛄'],['mountain','⛰️'],['sea','🌊','',0,'the sea'],['leaf','🍃'],['star','⭐']],
+  kitchen: [['salt','🧂','',0,'salt'],['jar','🫙'],['chopsticks','🥢','',0,'chopsticks','Where are the chopsticks?','These are chopsticks.']],
+  feel: [['sleepy','🥱','',0,'sleepy','Who is sleepy?','I am sleepy.'],['sick','🤒','',0,'sick','Who is sick?','I am sick.'],['shy','😊','',0,'shy','Who is shy?','I am shy.']],
+};
+CATS.forEach(c => { c.extra = EXTRA[c.id] || []; });
+CATS.forEach(c => ['words', 'extra'].forEach(list => { c[list] = c[list].map(([w, e, color, count, n, q, learn]) => {
   const word = { id: c.id + ':' + w, w, e, color: color || null, count: count || 0, cat: c.id, own: !!learn };
   if (count) {
     word.n = w + (count === 1 ? ' strawberry' : ' strawberries');
@@ -300,27 +328,47 @@ CATS.forEach(c => { c.words = c.words.map(([w, e, color, count, n, q, learn]) =>
     word.learn = learn || 'This is ' + word.n + '.';
     word.q = q || 'Where is the ' + w + '?';
   }
+  if (list === 'extra') { word.id = c.id + ':' + w; word.tier = 2; }
   return word;
-}); });
+}); }));
 // Concepts are practised inside the picture categories, on a word she already knows:
 // "Where is the big duck?", "Which duck is up?", "Where is the duck in the box?".
 // A group opens once the group before it is known.
 const A = (el, style) => `<span style="${style}">${el}</span>`;
 const CONCEPT_CATS = ['animals', 'go', 'sweets', 'fruit', 'music', 'toys', 'kitchen', 'clothes', 'sky', 'shapes'];
 const GROUND = '<i class="ground"></i>';
+const TABLE = '<svg viewBox="0 0 100 70" width="100%"><rect x="2" y="4" width="96" height="10" rx="3" fill="#c98a3c" stroke="#8b5a2b" stroke-width="2"/><rect x="10" y="14" width="8" height="54" fill="#c98a3c" stroke="#8b5a2b" stroke-width="2"/><rect x="82" y="14" width="8" height="54" fill="#c98a3c" stroke="#8b5a2b" stroke-width="2"/></svg>';
+const T = (style) => `<span style="width:1.4em;${style}">${TABLE}</span>`;
+const CONCEPT_KEYS = ['size', 'updown', 'table', 'box', 'tree'];
 const CONCEPTS = [
   [ { c: 'big', art: e => A(e, 'font-size:1.45em;bottom:0'), learn: n => `Big! A big ${n}.`, q: n => `Where is the big ${n}?` },
     { c: 'small', art: e => A(e, 'font-size:.55em;bottom:0'), learn: n => `Small! A small ${n}.`, q: n => `Where is the small ${n}?` } ],
   [ { c: 'up', art: e => A(e, 'font-size:.7em;top:0') + GROUND, learn: n => `Up! The ${n} is up.`, q: n => `Which ${n} is up?` },
     { c: 'down', art: e => A(e, 'font-size:.7em;bottom:.08em') + GROUND, learn: n => `Down! The ${n} is down.`, q: n => `Which ${n} is down?` } ],
+  [ { c: 'on', art: e => T('bottom:0') + A(e, 'font-size:.55em;bottom:.92em'), learn: n => `On! The ${n} is on the table.`, q: n => `Where is the ${n} on the table?` },
+    { c: 'under', art: e => T('bottom:0') + A(e, 'font-size:.5em;bottom:.04em'), learn: n => `Under! The ${n} is under the table.`, q: n => `Where is the ${n} under the table?` } ],
   [ { c: 'in', art: e => A('📦', 'font-size:.95em;bottom:0') + A(e, 'font-size:.5em;bottom:.42em'), learn: n => `In! The ${n} is in the box.`, q: n => `Where is the ${n} in the box?` },
-    { c: 'on', art: e => A('📦', 'font-size:.8em;bottom:0') + A(e, 'font-size:.62em;bottom:.74em'), learn: n => `On! The ${n} is on the box.`, q: n => `Where is the ${n} on the box?` },
-    { c: 'under', art: e => A('☂️', 'font-size:.95em;top:0') + A(e, 'font-size:.55em;bottom:0'), learn: n => `Under! The ${n} is under the umbrella.`, q: n => `Where is the ${n} under the umbrella?` } ],
+    { c: 'out', art: e => A('📦', 'font-size:.8em;bottom:0;left:32%') + A(e, 'font-size:.55em;bottom:0;left:80%'), learn: n => `Out! The ${n} is out of the box.`, q: n => `Where is the ${n} out of the box?` } ],
+  [ { c: 'front', w: 'in front of', art: e => A('🌳', 'font-size:1.15em;bottom:0') + A(e, 'font-size:.6em;bottom:0'), learn: n => `In front of! The ${n} is in front of the tree.`, q: n => `Where is the ${n} in front of the tree?` },
+    { c: 'behind', art: e => A(e, 'font-size:.5em;bottom:.7em;left:77%') + A('🌳', 'font-size:1.15em;bottom:0;left:46%'), learn: n => `Behind! The ${n} is behind the tree.`, q: n => `Where is the ${n} behind the tree?` },
+    { c: 'nextto', w: 'next to', art: e => A('🌳', 'font-size:1em;bottom:0;left:36%') + A(e, 'font-size:.55em;bottom:0;left:82%'), learn: n => `Next to! The ${n} is next to the tree.`, q: n => `Where is the ${n} next to the tree?` } ],
 ];
-function conceptWord(v, obj) {
-  return { id: 'concept:' + v.c, w: v.c, art: v.art(obj.e), learn: v.learn(obj.w), q: v.q(obj.w), concept: true };
+// Color words on a picture she knows: "Where is the blue dog?" (the picture is tinted).
+const TINT = { blue: 'hue-rotate(175deg) saturate(5)', red: 'hue-rotate(-38deg) saturate(7)', green: 'hue-rotate(55deg) saturate(4)',
+  yellow: 'hue-rotate(8deg) saturate(8) brightness(1.15)', pink: 'hue-rotate(280deg) saturate(4) brightness(1.1)', purple: 'hue-rotate(225deg) saturate(4)' };
+function adjWords(obj) {
+  return shuffle(Object.keys(TINT)).slice(0, 3).map(col => ({
+    id: 'adj:' + col, w: col, concept: true,
+    art: A(obj.e, `font-size:1.15em;top:.22em;filter:grayscale(1) sepia(1) ${TINT[col]}`),
+    learn: `${cap(col)}! A ${col} ${obj.w}.`, q: `Where is the ${col} ${obj.w}?`,
+  }));
 }
-const WORD = {}; CATS.forEach(c => c.words.forEach(w => WORD[w.id] = w));
+function conceptWord(v, obj) {
+  return { id: 'concept:' + v.c, c: v.c, w: v.w || v.c, art: v.art(obj.e), learn: v.learn(obj.w), q: v.q(obj.w), concept: true };
+}
+const WORD = {}; CATS.forEach(c => c.words.concat(c.extra).forEach(w => WORD[w.id] = w));
+const mastered = c => c.words.filter(w => status(w.id) === 'known').length >= c.words.length * 0.7;
+const activeWords = c => mastered(c) ? c.words.concat(c.extra) : c.words;
 
 // ---------- saved progress (this device only) ----------
 const KEY = 'blue-pup-words-v1';
@@ -737,7 +785,7 @@ function startScreen() {
 function home() {
   stopAll(); onSync = home; Music.on();
   const tiles = CATS.map(c => {
-    const st = c.words.map(w => status(w.id));
+    const st = activeWords(c).map(w => status(w.id));
     const preview = c.id === 'numbers' ? '<span style="font-family:var(--display);font-weight:800;color:#2f80ed">123</span>' : c.icon;
     return `<button class="cat" data-cat="${c.id}"><span class="pic">${preview}</span>
       <span class="name">${c.name}</span>
@@ -768,31 +816,37 @@ function flyStar(from) {
 
 function startRound(catId) {
   onSync = null; Music.off();
-  const c = CATS.find(x => x.id === catId);
-  const byNeed = c.words.slice().sort((a, b) => {
+  const c = CATS.find(x => x.id === catId), words = activeWords(c);
+  const byNeed = words.slice().sort((a, b) => {
     const ra = S.words[a.id], rb = S.words[b.id];
     const ka = ra ? (ra.seen ? ra.box : 99) : 99, kb = rb ? (rb.seen ? rb.box : 99) : 99; // unseen go after weak ones
     return ka - kb;
   });
   const learning = byNeed.filter(w => status(w.id) === 'learning');
-  const fresh = c.words.filter(w => status(w.id) === 'new');
-  const known = shuffle(c.words.filter(w => status(w.id) === 'known'));
-  // Up to 4 words: weak ones first, then up to 2 new (3 when starting), then known ones for review.
+  const fresh = words.filter(w => status(w.id) === 'new');
+  const known = shuffle(words.filter(w => status(w.id) === 'known'));
   // Up to 4 words: the 2 weakest, new ones, and one known word for review when there is one.
   const reserve = known.length ? 1 : 0;
   const set = learning.slice(0, 2);
   for (const w of fresh) if (set.length < 4 - reserve) set.push(w);
   for (const w of known.concat(learning, fresh)) if (set.length < 4 && !set.includes(w)) set.push(w);
   const teach = set.filter(w => status(w.id) !== 'known');
-  round = { cat: c, set, teach: teach.length ? teach : set, i: 0, scoops: [], concepts: [], kind: Object.keys(KINDS)[S.desserts.filter(d => d.k !== 'paint').length % 3] };
+  round = { cat: c, words, set, teach: teach.length ? teach : set, i: 0, scoops: [], concepts: [], kind: Object.keys(KINDS)[S.desserts.filter(d => d.k !== 'paint').length % 3] };
   // Concept practice on a word she already knows, or else one she meets in this round.
-  const known2 = c.words.filter(w => !w.own && (S.words[w.id] || {}).box >= 2);
-  const obj = CONCEPT_CATS.includes(c.id) && shuffle(known2.length ? known2 : set.filter(w => !w.own))[0];
+  const known2 = words.filter(w => w.e && !w.own && (S.words[w.id] || {}).box >= 2);
+  const obj = CONCEPT_CATS.includes(c.id) && shuffle(known2.length ? known2 : set.filter(w => w.e && !w.own))[0];
   if (obj) {
-    const groupKnown = g => g.every(v => status('concept:' + v.c) === 'known');
-    let open = 0; while (open < CONCEPTS.length - 1 && groupKnown(CONCEPTS[open])) open++;
-    const g = groupKnown(CONCEPTS[open]) || Math.random() < 0.3 ? CONCEPTS[Math.floor(Math.random() * (open + 1))] : CONCEPTS[open];
-    round.concepts = g.map(v => conceptWord(v, obj));
+    round.obj = obj;
+    if (mastered(c) && Math.random() < 0.5) {
+      round.concepts = adjWords(obj); // the category is well known: practise colors on it
+    } else {
+      const groupKnown = g => g.every(v => status('concept:' + v.c) === 'known');
+      let open = 0; while (open < CONCEPTS.length - 1 && groupKnown(CONCEPTS[open])) open++;
+      const gi = groupKnown(CONCEPTS[open]) || Math.random() < 0.3 ? Math.floor(Math.random() * (open + 1)) : open;
+      round.concepts = CONCEPTS[gi].map(v => conceptWord(v, obj));
+      if (['updown', 'table', 'box'].includes(CONCEPT_KEYS[gi])) round.drag = CONCEPT_KEYS[gi];
+    }
+    round.concepts.forEach(w => { w.group = round.concepts; });
     if (round.concepts.some(w => status(w.id) !== 'known')) round.teach = round.teach.concat([{ lesson: round.concepts }]);
   }
   say(c.name + '!', () => learnStep());
@@ -839,8 +893,8 @@ function quizStart() {
 function quizStep() {
   sky.innerHTML = ''; // balloons from the last answer must not cover the new pictures
   const target = round.qs[round.qi];
-  if (!target) return sayIt();
-  const pool = (target.concept ? round.concepts : round.cat.words).filter(w => w !== target);
+  if (!target) return round.drag ? putIt() : sayIt();
+  const pool = (target.group || round.words).filter(w => w !== target);
   const seenPool = pool.filter(w => round.set.includes(w) || status(w.id) !== 'new');
   const others = shuffle(seenPool.length >= 2 ? seenPool : pool).slice(0, 2);
   const opts = shuffle([target, ...others]);
@@ -877,6 +931,75 @@ function quizStep() {
       speak('learn:' + w.id, w.learn, () => speak('q:' + target.id, target.q));
     }
   });
+}
+
+// Drag game for places: "Put the dog under the table!", "Move the dog up!".
+// Positions are fractions of the scene; each command says where the picture starts, which drop counts, and where it settles.
+const DRAG = {
+  up: { start: [.5, .55], ok: (x, y) => y < .33, snap: [.5, .14], say: n => `Move the ${n} up!` },
+  down: { start: [.5, .45], ok: (x, y) => y > .67, snap: [.5, .84], say: n => `Move the ${n} down!` },
+  on: { start: [.12, .86], ok: (x, y) => x > .18 && x < .82 && y < .5, snap: [.5, .38], say: n => `Put the ${n} on the table!` },
+  under: { start: [.12, .18], ok: (x, y) => x > .22 && x < .78 && y > .56, snap: [.5, .8], say: n => `Put the ${n} under the table!` },
+  in: { start: [.15, .2], ok: (x, y) => Math.hypot(x - .5, y - .76) < .22, snap: [.5, .64], say: n => `Put the ${n} in the box!` },
+  out: { start: [.5, .64], ok: (x, y) => Math.hypot(x - .5, y - .76) > .28, snap: null, say: n => `Take the ${n} out of the box!` },
+};
+const SCENES = {
+  updown: '<span class="cloud">☁️</span><i class="floor"></i>',
+  table: `<span class="table">${TABLE}</span><i class="floor"></i>`,
+  box: '<span class="box">📦</span><i class="floor"></i>',
+};
+function putIt() {
+  sky.innerHTML = '';
+  const key = round.drag, obj = round.obj;
+  const cmds = key === 'box' ? ['in', 'out'] : shuffle(round.concepts.map(w => w.c));
+  const W = Math.min(innerWidth - 32, 340);
+  app.innerHTML = bar(`<span class="tracker">${treat(round.kind, round.scoops)}</span>`, true, starBadge()) +
+    `<div class="stage"><button class="ask" id="ask"><span class="round-btn">${ICON.speak}</span><span id="cmd"></span></button>
+     <div class="scene scene-${key}" id="scene" style="width:${W}px;height:${W}px">${SCENES[key]}<i class="target" id="target" hidden></i>
+       <span class="thing" id="thing" style="font-size:${W * .2}px">${obj.e}</span></div></div>`;
+  const scene = document.getElementById('scene'), thing = document.getElementById('thing'), target = document.getElementById('target');
+  const place = ([x, y], animate) => {
+    thing.classList.toggle('glide', !!animate);
+    thing.style.left = x * W + 'px'; thing.style.top = y * W + 'px'; thing.dataset.x = x; thing.dataset.y = y;
+  };
+  let k = 0, misses = 0, drag = null, busy = false;
+  const step = () => {
+    const c = cmds[k];
+    if (!c) return setTimeout(sayIt, 600);
+    const d = DRAG[c]; misses = 0; target.hidden = true;
+    if (c !== 'out') place(d.start, k > 0);
+    document.getElementById('cmd').textContent = round.concepts.find(w => w.c === c).w;
+    const ask = () => say(d.say(obj.w));
+    document.getElementById('ask').onclick = ask; ask();
+  };
+  thing.addEventListener('pointerdown', e => {
+    if (busy) return;
+    e.preventDefault(); thing.setPointerCapture(e.pointerId); drag = scene.getBoundingClientRect(); thing.classList.add('held');
+  });
+  thing.addEventListener('pointermove', e => {
+    if (!drag) return;
+    place([Math.min(1, Math.max(0, (e.clientX - drag.left) / W)), Math.min(1, Math.max(0, (e.clientY - drag.top) / W))]);
+  });
+  const drop = () => {
+    if (!drag) return;
+    drag = null; thing.classList.remove('held');
+    const c = cmds[k], d = DRAG[c], x = +thing.dataset.x, y = +thing.dataset.y, r = rec('concept:' + c);
+    if (d.ok(x, y)) {
+      busy = true;
+      if (d.snap) place(d.snap, true);
+      if (misses === 0) { r.box = Math.min(r.box + 1, 5); r.right++; S.stars = (S.stars || 0) + 1; flyStar(thing); } else r.wrong++;
+      save(); sfx.yay(); balloons(3); round.scoops.push(BLANK);
+      praise(pick(['Yes!', 'Great job!', 'Well done!']) + ' ' + cap(round.concepts.find(w => w.c === c).w) + '!');
+      setTimeout(() => { busy = false; k++; step(); }, 2000);
+    } else {
+      misses++; if (misses === 1) { r.box = Math.max(0, r.box - 1); save(); }
+      sfx.oops(); place(d.start, true);
+      if (misses >= 2 && d.snap) { target.hidden = false; target.style.left = d.snap[0] * W + 'px'; target.style.top = d.snap[1] * W + 'px'; }
+      say('Try again! ' + d.say(obj.w));
+    }
+  };
+  thing.addEventListener('pointerup', drop); thing.addEventListener('pointercancel', drop);
+  step();
 }
 
 // Last step: a picture she already knows, and she says the word. Her voice plays back, then the right word.
@@ -1006,7 +1129,7 @@ function reward() {
   const turn = (S.rounds || 0) % 3;
   S.rounds = (S.rounds || 0) + 1; save();
   if (turn === 0) return dessert();
-  if (turn === 1) return puzzle(pick(round.set.filter(w => w.e).concat(round.cat.words.filter(w => w.e)).slice(0, 4)));
+  if (turn === 1) return puzzle(pick(round.set.filter(w => w.e).concat(round.words.filter(w => w.e)).slice(0, 4)));
   const ids = CAT_PAGES[round.cat.id] || PAGES.map(p => p.id);
   paintPage(PAGES.find(p => p.id === pick(ids)));
 }
@@ -1129,9 +1252,11 @@ function parents() {
   el.className = 'sheet';
   el.innerHTML = `<div class="sheet-in"><h2>אזור הורים</h2>
     <p>מילים שהיא יודעת: ${known} מתוך ${total}. מילה נחשבת ידועה אחרי 3 תשובות נכונות בניסיון ראשון. צהוב = יודעת, כחול = בלמידה, אפור = עוד לא ראתה.</p>
-    <h3>גדול/קטן, למעלה/למטה, בתוך/על/מתחת</h3><p>מתורגל בתוך הקטגוריות, על מילים שהיא כבר יודעת. כל זוג נפתח כשהקודם ידוע.</p>
-    <div class="chips">${CONCEPTS.flat().map(v => `<span class="chip ${status('concept:' + v.c)}">${v.c}</span>`).join('')}</div>
-    ${CATS.map(c => `<h3>${HE[c.id]}</h3><div class="chips">${c.words.map(w => `<span class="chip ${status(w.id)}">${w.w}</span>`).join('')}</div>`).join('')}
+    <h3>מילות יחס</h3><p>מתורגלות בתוך הקטגוריות, על מילים שהיא כבר יודעת: גדול/קטן, למעלה/למטה, על/מתחת לשולחן, בתוך/מחוץ לקופסה, לפני/מאחורי/ליד העץ. כל קבוצה נפתחת כשהקודמת ידועה. חלקן גם במשחק גרירה.</p>
+    <div class="chips">${CONCEPTS.flat().map(v => `<span class="chip ${status('concept:' + v.c)}">${v.w || v.c}</span>`).join('')}</div>
+    <h3>צבעים על תמונה ("the blue dog")</h3><p>נפתח בקטגוריה שהיא יודעת בה את רוב המילים.</p>
+    <div class="chips">${Object.keys(TINT).map(col => `<span class="chip ${status('adj:' + col)}">${col}</span>`).join('')}</div>
+    ${CATS.map(c => `<h3>${HE[c.id]}${mastered(c) && c.extra.length ? ' · נפתחו מילים נוספות' : ''}</h3><div class="chips">${c.words.concat(c.extra).map(w => `<span class="chip ${status(w.id)}${w.tier ? ' extra' : ''}">${w.w}</span>`).join('')}</div>`).join('')}
     <h3>הקראה</h3><div class="row"><button class="pbtn ${S.slow ? 'on' : ''}" data-slow="1">איטית</button><button class="pbtn ${S.slow ? '' : 'on'}" data-slow="0">רגילה</button>
 </div>
     <h3>מוזיקת רקע</h3><div class="row"><button class="pbtn ${S.music !== false ? 'on' : ''}" data-music="1">פועלת</button><button class="pbtn ${S.music === false ? 'on' : ''}" data-music="0">כבויה</button></div>
@@ -1194,7 +1319,7 @@ function recordings() {
   const draw = () => {
     const c = CATS.find(x => x.id === recCat);
     const praises = [...clips].filter(k => k.startsWith('praise:')).sort();
-    const count = cat => cat.words.filter(w => clips.has('learn:' + w.id) || clips.has('q:' + w.id)).length;
+    const count = cat => cat.words.concat(cat.extra).filter(w => clips.has('learn:' + w.id) || clips.has('q:' + w.id)).length;
     el.innerHTML = `<div class="sheet-in"><h2>הקלטות של אמא ואבא</h2>
       <p>לוחצים על 🎙, מדברים, ולוחצים על ■ כדי לעצור. ההקלטה נשמרת בטלפון הזה ומתנגנת במקום הקול של הטלפון. מילה שלא הוקלטה תוקרא בקול של הטלפון, כך שאפשר להקליט רק חלק.</p>
       <p class="warn">${msg}</p>
@@ -1203,8 +1328,8 @@ function recordings() {
       ${praises.map((k, i) => slot(k, 'חיזוק ' + (i + 1), '')).join('')}
       ${slot(live && live.key.startsWith('praise:') && !clips.has(live.key) ? live.key : 'praise:new', 'חיזוק חדש', '')}
       <h3>מילים</h3>
-      <div class="chips rtl">${CATS.map(x => `<button class="chip ${x.id === recCat ? 'known' : ''}" data-cat="${x.id}">${HE[x.id]} ${count(x)}/${x.words.length}</button>`).join('')}</div>
-      ${c.words.map(w => `<div class="wordrec"><b dir="ltr">${w.w}</b>
+      <div class="chips rtl">${CATS.map(x => `<button class="chip ${x.id === recCat ? 'known' : ''}" data-cat="${x.id}">${HE[x.id]} ${count(x)}/${x.words.length + x.extra.length}</button>`).join('')}</div>
+      ${c.words.concat(c.extra).map(w => `<div class="wordrec"><b dir="ltr">${w.w}</b>
         ${slot('learn:' + w.id, 'לימוד', w.learn + ' ' + cap(w.w) + '!')}
         ${slot('q:' + w.id, 'שאלה', w.q)}</div>`).join('')}
       <div class="row"><button class="pbtn on" id="rclose">סגירה</button></div></div>`;
