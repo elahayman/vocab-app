@@ -198,6 +198,20 @@ button:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
 
 /* balloons */
 #sky { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }
+/* Bedtime: the night sky closes the play session. */
+.night { position: fixed; inset: 0; z-index: 4; overflow: hidden; background: linear-gradient(#0b1638, #1d2f6b 70%, #2b3f80); animation: dusk 2.5s ease-out; }
+@keyframes dusk { from { opacity: 0; } to { opacity: 1; } }
+.night .moon { position: absolute; right: 12%; font-size: 5.5rem; animation: moonrise 4s ease-out forwards; bottom: -20%; touch-action: none; user-select: none; -webkit-user-select: none; }
+@keyframes moonrise { to { bottom: 74%; } }
+.night .st { position: absolute; color: #fff6c2; opacity: 0; animation: twinkle 2.4s ease-in-out infinite alternate; }
+@keyframes twinkle { 0% { opacity: 0; transform: scale(.6); } 100% { opacity: 1; transform: scale(1); } }
+.night .gn { position: absolute; top: 34%; left: 0; right: 0; text-align: center; font-family: var(--display); font-weight: 800; font-size: 2.6rem; color: #fff6c2; opacity: 0; animation: dusk 1.5s 3s ease-out forwards; }
+.night .bed { position: absolute; bottom: 12%; left: 50%; transform: translateX(-50%); width: 9rem; height: 7rem; }
+.night .bed .b { position: absolute; bottom: 0; left: 0; font-size: 7rem; line-height: 1; }
+.night .kid { position: absolute; bottom: .4rem; font-size: 3.6rem; line-height: 1; left: -120%; animation: tobed 2.6s .8s ease-in-out forwards; }
+@keyframes tobed { to { left: 30%; } }
+.night .zz { position: absolute; right: 0; top: -2rem; font-size: 2.2rem; opacity: 0; animation: zz 2.6s ease-in-out infinite; }
+@keyframes zz { 0% { opacity: 0; transform: translate(0, 0); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(1.4rem, -2.6rem); } }
 .balloon { position: absolute; bottom: -140px; width: 70px; pointer-events: auto; animation: rise 2.4s ease-in forwards; }
 .balloon.deco { pointer-events: none; }
 .balloon.slow { width: 92px; animation-duration: 7.5s; animation-timing-function: linear; }
@@ -774,6 +788,7 @@ function bar(middle = '', withHome = true, right = '') {
 }
 
 function startScreen() {
+  if (S.night && Date.now() - S.night < 3600000) { app.innerHTML = `<div class="stage">${pup()}<p class="hello">Good night!</p><button class="play" id="go" aria-label="play">${ICON.play}</button></div>`; document.getElementById('go').onclick = () => { pickVoice(); goodnight(); }; return; }
   app.innerHTML = `<div class="stage">${pup()}<p class="hello">Hello ${S.name || 'Gal'}!</p>
     <button class="play" id="go" aria-label="play">${ICON.play}</button></div>`;
   document.getElementById('go').onclick = () => {
@@ -1062,7 +1077,7 @@ function dessert() {
       document.getElementById('cone').innerHTML = treat(kind, layers, t);
       document.getElementById('tops').innerHTML = `<button class="next" id="done" aria-label="home">${ICON.home.replace(/#1a5fbf/g, '#fff')}</button>`;
       sfx.yay(); slowBalloons(5); say(`Great job! Your ${name}!`);
-      document.getElementById('done').onclick = home;
+      document.getElementById('done').onclick = afterPrize;
     });
   }
 }
@@ -1119,7 +1134,7 @@ function paintPage(pg) {
   document.getElementById('done').onclick = () => {
     if (Object.keys(fills).length) { S.desserts.push({ k: 'paint', p: pg.id, f: fills, d: Date.now() }); if (S.desserts.length > 80) S.desserts.shift(); save(); }
     sfx.yay(); slowBalloons(5); say('Beautiful! Great job!');
-    const d = document.getElementById('done'); d.innerHTML = ICON.home.replace(/#1a5fbf/g, '#fff'); d.onclick = home;
+    const d = document.getElementById('done'); d.innerHTML = ICON.home.replace(/#1a5fbf/g, '#fff'); d.onclick = afterPrize;
   };
 }
 
@@ -1186,7 +1201,7 @@ function puzzle(w) {
     play.classList.add('solved'); sfx.fanfare(); slowBalloons(4);
     app.querySelector('.bar .word').textContent = w.w;
     setTimeout(() => speak('learn:' + w.id, cap(w.w) + '! ' + w.learn), 500);
-    const again = document.getElementById('again'); again.hidden = false; again.onclick = home;
+    const again = document.getElementById('again'); again.hidden = false; again.onclick = afterPrize;
   }
 }
 
@@ -1237,10 +1252,34 @@ function party() {
   });
 }
 
+// ---------- bedtime ----------
+// After about S.bedMin minutes of play (default 5), the next finished prize leads to the night sky
+// instead of home: the moon rises, the child goes to bed, "Good night!". A parent holds the moon to play again.
+let playMs = 0;
+setInterval(() => { if (document.visibilityState === 'visible' && !document.querySelector('.night')) playMs += 5000; }, 5000);
+const bedMin = () => S.bedMin === undefined ? 5 : S.bedMin;
+function afterPrize() { if (bedMin() && playMs >= bedMin() * 60000) goodnight(); else home(); }
+function goodnight() {
+  stopAll(); Music.off(); onSync = null; sky.innerHTML = '';
+  if (!S.night || Date.now() - S.night > 3600000) { S.night = Date.now(); saveLocal(); }
+  const stars = Array.from({ length: 22 }, (_, i) => `<i class="st" style="left:${(i * 37) % 94 + 3}%;top:${(i * 53) % 58 + 4}%;font-size:${0.8 + (i % 3) * 0.5}rem;animation-delay:${1 + (i % 7) * 0.45}s">${i % 4 ? '★' : '✦'}</i>`).join('');
+  app.innerHTML = `<div class="night">${stars}<span class="moon" id="moon" aria-label="moon">🌙</span>
+    <p class="gn">Good night, ${S.name || 'Gal'}!</p>
+    <div class="bed"><span class="b">🛏️</span><span class="kid" id="kid">🧒</span></div></div>`;
+  // A soft lullaby while the moon comes up.
+  [[392, 0], [330, 0.7], [262, 1.4], [330, 2.1], [294, 2.8], [196, 3.5]].forEach(([f, at]) => setTimeout(() => tone([f], 1.1, 'sine', 0, 0.07), at * 1000));
+  setTimeout(() => {
+    const k = document.getElementById('kid'); if (!k) return;
+    k.parentNode.innerHTML = '<span class="b">🛌</span><span class="zz">💤</span>';
+    speak('night', `Good night, ${S.name || 'Gal'}! Sleep tight!`);
+  }, 3600);
+  holdToOpen(document.getElementById('moon'), () => { S.night = 0; playMs = 0; saveLocal(); home(); });
+}
+
 // ---------- parents (press and hold the gear) ----------
-function holdToOpen(el) {
+function holdToOpen(el, open = parents) {
   let t = null;
-  const start = () => { t = setTimeout(parents, 1200); };
+  const start = () => { t = setTimeout(open, 1200); };
   const stop = () => clearTimeout(t);
   el.addEventListener('pointerdown', start); ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => el.addEventListener(ev, stop));
   el.addEventListener('contextmenu', e => e.preventDefault());
@@ -1259,6 +1298,8 @@ function parents() {
     ${CATS.map(c => `<h3>${HE[c.id]}${mastered(c) && c.extra.length ? ' · נפתחו מילים נוספות' : ''}</h3><div class="chips">${c.words.concat(c.extra).map(w => `<span class="chip ${status(w.id)}${w.tier ? ' extra' : ''}">${w.w}</span>`).join('')}</div>`).join('')}
     <h3>הקראה</h3><div class="row"><button class="pbtn ${S.slow ? 'on' : ''}" data-slow="1">איטית</button><button class="pbtn ${S.slow ? '' : 'on'}" data-slow="0">רגילה</button>
 </div>
+    <h3>לילה טוב</h3><p>אחרי זמן המשחק, בסוף הסבב, עולים ירח וכוכבים והילדה הולכת לישון. כדי לשחק שוב: לחיצה ארוכה על הירח. מי שנכנס שוב בתוך שעה חוזר לירח.</p>
+    <div class="row">${[5, 10, 15, 0].map(m => `<button class="pbtn ${bedMin() === m ? 'on' : ''}" data-bed="${m}">${m ? m + ' דקות' : 'כבוי'}</button>`).join('')}</div>
     <h3>מוזיקת רקע</h3><div class="row"><button class="pbtn ${S.music !== false ? 'on' : ''}" data-music="1">פועלת</button><button class="pbtn ${S.music === false ? 'on' : ''}" data-music="0">כבויה</button></div>
     <h3>הקול</h3><p>לחיצה על קול משמיעה אותו ובוחרת בו. הקולות הטבעיים יותר מופיעים ראשונים. ההקלטות שלכם תמיד יתנגנו במקומו.</p>
     <div class="chips" id="voices"></div>
@@ -1289,6 +1330,7 @@ function parents() {
     say(`Hello ${S.name}!`);
   };
   el.querySelectorAll('[data-music]').forEach(b => b.onclick = () => { S.music = b.dataset.music === '1'; saveLocal(); if (S.music) Music.on(); else Music.off(); el.remove(); parents(); });
+  el.querySelectorAll('[data-bed]').forEach(b => b.onclick = () => { S.bedMin = +b.dataset.bed; saveLocal(); el.remove(); parents(); });
   el.querySelectorAll('[data-slow]').forEach(b => b.onclick = () => { S.slow = b.dataset.slow === '1'; save(); el.remove(); parents(); });
   el.querySelector('#close').onclick = () => { el.remove(); home(); };
   el.querySelector('#recs').onclick = () => { el.remove(); recordings(); };
@@ -1324,6 +1366,7 @@ function recordings() {
       <p>לוחצים על 🎙, מדברים, ולוחצים על ■ כדי לעצור. ההקלטה נשמרת בטלפון הזה ומתנגנת במקום הקול של הטלפון. מילה שלא הוקלטה תוקרא בקול של הטלפון, כך שאפשר להקליט רק חלק.</p>
       <p class="warn">${msg}</p>
       <h3>בכניסה</h3>${slot('hello', 'שלום', `Hello ${S.name || 'Gal'}! Let's play!`)}
+      <h3>לילה טוב</h3>${slot('night', 'לילה טוב', `Good night, ${S.name || 'Gal'}! Sleep tight!`)}
       <h3>חיזוקים</h3><p>למשל "Great job!" או "Well done, sweetie!". בכל תשובה נכונה יתנגן אחד מהם באקראי.</p>
       ${praises.map((k, i) => slot(k, 'חיזוק ' + (i + 1), '')).join('')}
       ${slot(live && live.key.startsWith('praise:') && !clips.has(live.key) ? live.key : 'praise:new', 'חיזוק חדש', '')}

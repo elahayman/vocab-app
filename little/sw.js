@@ -1,5 +1,5 @@
 // Offline support for Blue Pup: cache the app shell, serve it cache-first, refresh in the background.
-const CACHE = 'blue-pup-v2';
+const CACHE = 'blue-pup-v3';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', '../firebase-config.js'];
 
 self.addEventListener('install', (e) => {
