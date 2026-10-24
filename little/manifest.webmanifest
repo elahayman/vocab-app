@@ -1,0 +1,16 @@
+{
+  "name": "Blue Pup Words",
+  "short_name": "Blue Pup",
+  "description": "First English words with pictures and sound",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#dff0ff",
+  "theme_color": "#2f80ed",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
