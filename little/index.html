@@ -158,6 +158,11 @@ button:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
 .gallery div { background: var(--card); border-radius: 18px; display: grid; place-items: center; padding: 8px 0; box-shadow: 0 4px 0 var(--card-edge); }
 .gallery svg { height: 110px; width: auto; }
 .cones-btn { position: relative; }
+.bar .grow { gap: 8px; align-items: center; }
+.star-count { font-family: var(--display); font-weight: 800; font-size: 1.3rem; color: var(--blue-deep); background: var(--card); border-radius: 999px; padding: 4px 12px; box-shadow: 0 3px 0 var(--card-edge); white-space: nowrap; }
+.star-count.bump { animation: hop .4s; }
+.fly-star { position: fixed; z-index: 8; font-size: 44px; font-style: normal; margin: -22px 0 0 -22px; animation: star-fly .8s cubic-bezier(.5,-0.4,.7,1) forwards; pointer-events: none; }
+@keyframes star-fly { to { transform: translate(var(--tx), var(--ty)) scale(.5) rotate(200deg); } }
 .cones-btn b { position: absolute; top: -4px; right: -4px; min-width: 24px; height: 24px; padding: 0 5px; box-sizing: border-box; border-radius: 12px; background: var(--berry); color: #fff; font-family: var(--display); font-size: 14px; line-height: 24px; }
 .cat.locked { opacity: .45; position: relative; }
 .cat .page { width: 100%; max-width: 140px; height: auto; }
@@ -368,6 +373,49 @@ const sfx = {
   fanfare: () => tone([523, 659, 784, 659, 784, 1047], 0.2, 'triangle', 0.13),
 };
 
+// ---------- background music ----------
+// An original, gentle tune on a loop. It plays on the home, coloring, gallery and treat screens,
+// and stops while she learns and answers, so the words are clear.
+const Music = (() => {
+  const N = n => 261.63 * Math.pow(2, n / 12); // semitones from middle C
+  // [note, beats]; null is a rest
+  const MEL = [[4,1],[7,1],[9,1],[7,1],[4,1],[2,1],[0,2],[2,1],[4,1],[7,1],[4,1],[2,4],
+               [4,1],[7,1],[9,1],[12,1],[9,1],[7,1],[4,2],[2,1],[4,1],[2,1],[-1,1],[0,4]];
+  const BASS = [[-12,4],[-12,4],[-17,4],[-17,4],[-15,4],[-20,4],[-17,4],[-12,4]];
+  const BEAT = 0.42;
+  let timer = null, t0 = 0, loopLen = 0;
+  const note = (f, at, dur, type, vol) => {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(vol, at + 0.03); g.gain.exponentialRampToValueAtTime(0.0005, at + dur * 0.95);
+    o.connect(g).connect(bus); o.start(at); o.stop(at + dur);
+  };
+  let bus = null;
+  function scheduleLoop(start) {
+    let t = start;
+    MEL.forEach(([n, b]) => { if (n !== null) note(N(n), t, b * BEAT, 'triangle', 0.045); t += b * BEAT; });
+    t = start;
+    BASS.forEach(([n, b]) => { note(N(n), t, b * BEAT, 'sine', 0.05); t += b * BEAT; });
+    loopLen = MEL.reduce((a, [, b]) => a + b, 0) * BEAT;
+  }
+  return {
+    on() {
+      if (timer || S.music === false) return;
+      try {
+        ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+        if (ac.state === 'suspended') ac.resume();
+        bus = ac.createGain(); bus.connect(ac.destination);
+        t0 = ac.currentTime + 0.3; scheduleLoop(t0);
+        timer = setInterval(() => { if (ac.currentTime > t0 + loopLen - 1) { t0 += loopLen; scheduleLoop(t0); } }, 400);
+      } catch (e) {}
+    },
+    off() {
+      clearInterval(timer); timer = null;
+      if (bus) { const b = bus; bus = null; try { b.gain.setTargetAtTime(0, ac.currentTime, 0.15); setTimeout(() => b.disconnect(), 800); } catch (e) {} }
+    },
+  };
+})();
+
 // ---------- family recordings (kept on this phone, in IndexedDB) ----------
 // Keys: learn:<word id>, q:<word id>, praise:<time>. A word without a recording uses the phone's voice.
 const clips = new Set(), decoded = {};
@@ -488,6 +536,7 @@ const Sync = (() => {
     const have = new Set(S.desserts.map(d => d.d));
     (remote.desserts || []).forEach(d => { if (!have.has(d.d)) { S.desserts.push(d); diff = true; } });
     if ((remote.rounds || 0) > (S.rounds || 0)) { S.rounds = remote.rounds; diff = true; }
+    if ((remote.stars || 0) > (S.stars || 0)) { S.stars = remote.stars; diff = true; }
     Object.entries(remote.paint || {}).forEach(([id, f]) => { S.paint = S.paint || {}; if (!S.paint[id]) { S.paint[id] = f; diff = true; } });
     if (diff) { S.desserts.sort((a, b) => a.d - b.d); S.desserts = S.desserts.slice(-80); saveLocal(); }
     return diff;
@@ -520,7 +569,7 @@ const Sync = (() => {
         await db.runTransaction(async tx => {
           const snap = await tx.get(ref);
           if (snap.exists && merge(JSON.parse(snap.data().json))) changed();
-          tx.set(ref, { json: JSON.stringify({ words: S.words, desserts: S.desserts, rounds: S.rounds || 0, paint: S.paint || {} }), t: Date.now() });
+          tx.set(ref, { json: JSON.stringify({ words: S.words, desserts: S.desserts, rounds: S.rounds || 0, stars: S.stars || 0, paint: S.paint || {} }), t: Date.now() });
         });
       } catch (e) { timer = setTimeout(push, 15000); }
     }, 2500);
@@ -677,7 +726,7 @@ function startScreen() {
 }
 
 function home() {
-  stopAll(); onSync = home;
+  stopAll(); onSync = home; Music.on();
   const tiles = CATS.map(c => {
     const st = c.words.map(w => status(w.id));
     const preview = c.id === 'numbers' ? '<span style="font-family:var(--display);font-weight:800;color:#2f80ed">123</span>' : c.icon;
@@ -688,7 +737,7 @@ function home() {
   // Her ice cream gallery sits in the top corner, apart from the categories.
   app.innerHTML = `<div class="bar"><button class="round-btn cones-btn" data-go="gallery" aria-label="my ice creams">${ICON.cones}${S.desserts.length ? `<b>${S.desserts.length}</b>` : ''}</button>
       <button class="round-btn cones-btn" data-go="paint" aria-label="coloring">${ICON.brush}${unlockedPages() > (S.pagesSeen || 1) ? '<b>!</b>' : ''}</button>
-      <div class="grow">${pup('small')}</div>
+      <div class="grow">${pup('small')}${starBadge()}</div>
       <button class="round-btn gear" id="gear" aria-label="parents (press and hold)">${ICON.gear}</button></div>` +
     `<div class="stage home-stage"><div class="home-scroll"><div class="cats">${tiles}
 </div></div></div>`;
@@ -696,8 +745,21 @@ function home() {
   holdToOpen(document.getElementById('gear'));
 }
 
+const starBadge = () => `<span class="star-count" id="stars">⭐ ${S.stars || 0}</span>`;
+// A star flies from the picture she tapped to the counter.
+function flyStar(from) {
+  const to = document.getElementById('stars'); if (!to) return;
+  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+  const st = document.createElement('i');
+  st.className = 'fly-star'; st.textContent = '⭐';
+  st.style.left = (a.left + a.width / 2) + 'px'; st.style.top = (a.top + a.height / 2) + 'px';
+  st.style.setProperty('--tx', (b.left + 20 - a.left - a.width / 2) + 'px'); st.style.setProperty('--ty', (b.top + 14 - a.top - a.height / 2) + 'px');
+  document.body.appendChild(st);
+  setTimeout(() => { st.remove(); to.textContent = '⭐ ' + (S.stars || 0); to.classList.remove('bump'); void to.offsetWidth; to.classList.add('bump'); sfx.scoop(); }, 800);
+}
+
 function startRound(catId) {
-  onSync = null;
+  onSync = null; Music.off();
   const c = CATS.find(x => x.id === catId);
   const byNeed = c.words.slice().sort((a, b) => {
     const ra = S.words[a.id], rb = S.words[b.id];
@@ -775,7 +837,7 @@ function quizStep() {
   const others = shuffle(seenPool.length >= 2 ? seenPool : pool).slice(0, 2);
   const opts = shuffle([target, ...others]);
   let misses = 0, done = false;
-  app.innerHTML = bar(`<span class="tracker">${treat(round.kind, round.scoops)}</span>`) +
+  app.innerHTML = bar(`<span class="tracker">${treat(round.kind, round.scoops)}</span>`, true, starBadge()) +
     `<div class="stage"><button class="ask" id="ask"><span class="round-btn">${ICON.speak}</span><span>${target.w}</span></button>
      <div class="opts" style="grid-template-columns:repeat(${opts.length},1fr)">${opts.map((w, i) => `<button class="opt" data-i="${i}" aria-label="${w.w}">${pic(w)}</button>`).join('')}</div></div>`;
   const ask = () => speak('q:' + target.id, target.q);
@@ -788,7 +850,7 @@ function quizStep() {
     if (w === target) {
       done = true;
       btn.classList.remove('hint'); btn.classList.add('right');
-      if (misses === 0) { r.box = Math.min(r.box + 1, 5); r.right++; } else r.wrong++;
+      if (misses === 0) { r.box = Math.min(r.box + 1, 5); r.right++; S.stars = (S.stars || 0) + 1; flyStar(btn); } else r.wrong++;
       save();
       sfx.yay(); balloons(misses ? 2 : 4);
       round.scoops.push(BLANK);
@@ -875,6 +937,7 @@ function dessert() {
 }
 
 function gallery() {
+  Music.on();
   onSync = gallery;
   const items = S.desserts.slice().reverse().map(d => `<div>${treat(d.k || 'cone', d.s, d.t)}</div>`).join('');
   app.innerHTML = bar() + `<div class="stage home-stage"><div class="home-scroll">${items ? `<div class="gallery">${items}</div>` : `<div class="stage">${pup()}<div class="cone-big">${cone([])}</div></div>`}</div></div>`;
@@ -906,6 +969,7 @@ function pageSvg(pg) {
     sh.replace(/^<(\w+)/, `<$1 data-r="${i}" fill="${fills[i] || '#ffffff'}" stroke="#1b3a5c" stroke-width="3" stroke-linejoin="round"`)).join('')}</svg>`;
 }
 function paintList() {
+  Music.on();
   onSync = paintList; sky.innerHTML = '';
   S.pagesSeen = unlockedPages(); saveLocal();
   app.innerHTML = bar() + `<div class="stage home-stage"><div class="home-scroll"><div class="cats">${PAGES.map((pg, i) => i < unlockedPages()
@@ -967,6 +1031,7 @@ function slowBalloons(n) { for (let i = 0; i < n; i++) balloon(pick(BALLOON), { 
 
 // End of a round: slow balloons to pop, and the puppy counts the pops in English.
 function party() {
+  Music.on();
   sky.innerHTML = '';
   const n = 8; let popped = 0, gone = 0;
   app.innerHTML = bar(`<span class="pop-count" id="pc">0</span>`) + `<div class="stage">${pup()}</div>`;
@@ -999,6 +1064,7 @@ function parents() {
     ${CATS.map(c => `<h3>${HE[c.id]}</h3><div class="chips">${c.words.map(w => `<span class="chip ${status(w.id)}">${w.w}</span>`).join('')}</div>`).join('')}
     <h3>הקראה</h3><div class="row"><button class="pbtn ${S.slow ? 'on' : ''}" data-slow="1">איטית</button><button class="pbtn ${S.slow ? '' : 'on'}" data-slow="0">רגילה</button>
 </div>
+    <h3>מוזיקת רקע</h3><div class="row"><button class="pbtn ${S.music !== false ? 'on' : ''}" data-music="1">פועלת</button><button class="pbtn ${S.music === false ? 'on' : ''}" data-music="0">כבויה</button></div>
     <h3>הקול</h3><p>לחיצה על קול משמיעה אותו ובוחרת בו. הקולות הטבעיים יותר מופיעים ראשונים. ההקלטות שלכם תמיד יתנגנו במקומו.</p>
     <div class="chips" id="voices"></div>
     <p id="vinfo" style="margin-top:8px"></p>
@@ -1027,6 +1093,7 @@ function parents() {
     S.name = el.querySelector('#kidname').value.trim() || 'Gal'; saveLocal();
     say(`Hello ${S.name}!`);
   };
+  el.querySelectorAll('[data-music]').forEach(b => b.onclick = () => { S.music = b.dataset.music === '1'; saveLocal(); if (S.music) Music.on(); else Music.off(); el.remove(); parents(); });
   el.querySelectorAll('[data-slow]').forEach(b => b.onclick = () => { S.slow = b.dataset.slow === '1'; save(); el.remove(); parents(); });
   el.querySelector('#close').onclick = () => { el.remove(); home(); };
   el.querySelector('#recs').onclick = () => { el.remove(); recordings(); };
@@ -1045,6 +1112,7 @@ function parents() {
 
 let recCat = 'animals';
 function recordings() {
+  Music.off(); // keep the music out of the recordings
   const el = document.createElement('div');
   el.className = 'sheet';
   document.body.appendChild(el);
