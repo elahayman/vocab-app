@@ -4,7 +4,7 @@
   "description": "כמה דקות ביום של אוצר מילים באנגלית",
   "lang": "he",
   "dir": "rtl",
-  "id": "./",
+  "id": "/vocab-app/",
   "start_url": "./index.html",
   "scope": "./index.html",
   "display": "standalone",
