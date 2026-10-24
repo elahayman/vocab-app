@@ -157,6 +157,7 @@ button:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; width: 100%; }
 .gallery div { background: var(--card); border-radius: 18px; display: grid; place-items: center; padding: 8px 0; box-shadow: 0 4px 0 var(--card-edge); }
 .gallery svg { height: 110px; width: auto; }
+.gallery svg.page { width: 110px; }
 .cones-btn { position: relative; }
 .bar .grow { gap: 8px; align-items: center; }
 .star-count { font-family: var(--display); font-weight: 800; font-size: 1.3rem; color: var(--blue-deep); background: var(--card); border-radius: 999px; padding: 4px 12px; box-shadow: 0 3px 0 var(--card-edge); white-space: nowrap; }
@@ -164,6 +165,15 @@ button:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
 .fly-star { position: fixed; z-index: 8; font-size: 44px; font-style: normal; margin: -22px 0 0 -22px; animation: star-fly .8s cubic-bezier(.5,-0.4,.7,1) forwards; pointer-events: none; }
 @keyframes star-fly { to { transform: translate(var(--tx), var(--ty)) scale(.5) rotate(200deg); } }
 .cones-btn b { position: absolute; top: -4px; right: -4px; min-width: 24px; height: 24px; padding: 0 5px; box-sizing: border-box; border-radius: 12px; background: var(--berry); color: #fff; font-family: var(--display); font-size: 14px; line-height: 24px; }
+.jig { position: relative; max-width: 100%; touch-action: none; }
+.board { position: absolute; left: 0; top: 0; background: var(--card); border-radius: 18px; box-shadow: 0 6px 0 var(--card-edge); overflow: hidden; }
+.ghost { position: absolute; inset: 0; display: grid; place-items: center; line-height: 1; opacity: .12; filter: grayscale(1); }
+.slot { position: absolute; box-sizing: border-box; border: 2px dashed var(--card-edge); }
+.piece { position: absolute; overflow: hidden; background: var(--card); border-radius: 6px; box-shadow: 0 3px 8px rgba(27,58,92,.25); transform-origin: 0 0; transition: transform .15s, left .2s, top .2s; touch-action: none; cursor: grab; }
+.piece.drag { transition: none; z-index: 3; box-shadow: 0 10px 20px rgba(27,58,92,.35); }
+.piece.done { box-shadow: none; border-radius: 0; cursor: default; }
+.piece-in { position: absolute; display: grid; place-items: center; line-height: 1; }
+.jig.solved .board { box-shadow: 0 0 0 6px var(--mint), 0 6px 0 var(--card-edge); }
 .cat.locked { opacity: .45; position: relative; }
 .cat .page { width: 100%; max-width: 140px; height: auto; }
 .lock { position: absolute; font-size: 2rem; top: 40%; }
@@ -537,7 +547,6 @@ const Sync = (() => {
     (remote.desserts || []).forEach(d => { if (!have.has(d.d)) { S.desserts.push(d); diff = true; } });
     if ((remote.rounds || 0) > (S.rounds || 0)) { S.rounds = remote.rounds; diff = true; }
     if ((remote.stars || 0) > (S.stars || 0)) { S.stars = remote.stars; diff = true; }
-    Object.entries(remote.paint || {}).forEach(([id, f]) => { S.paint = S.paint || {}; if (!S.paint[id]) { S.paint[id] = f; diff = true; } });
     if (diff) { S.desserts.sort((a, b) => a.d - b.d); S.desserts = S.desserts.slice(-80); saveLocal(); }
     return diff;
   }
@@ -569,7 +578,7 @@ const Sync = (() => {
         await db.runTransaction(async tx => {
           const snap = await tx.get(ref);
           if (snap.exists && merge(JSON.parse(snap.data().json))) changed();
-          tx.set(ref, { json: JSON.stringify({ words: S.words, desserts: S.desserts, rounds: S.rounds || 0, stars: S.stars || 0, paint: S.paint || {} }), t: Date.now() });
+          tx.set(ref, { json: JSON.stringify({ words: S.words, desserts: S.desserts, rounds: S.rounds || 0, stars: S.stars || 0 }), t: Date.now() });
         });
       } catch (e) { timer = setTimeout(push, 15000); }
     }, 2500);
@@ -631,7 +640,7 @@ const ICON = {
   next: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   gear: '<svg viewBox="0 0 24 24" fill="none" stroke="#5f7a96" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>',
   mic: '<svg viewBox="0 0 24 24" fill="#fff"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5"/><path d="M5 11a7 7 0 0014 0M12 18v3.5M8.5 21.5h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>',
-  brush: '<svg viewBox="0 0 24 24"><path d="M14 3l7 7-8 8-7-7z" fill="#ff8fc0"/><path d="M6 11l7 7-3 3H4v-6z" fill="#2f80ed"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
   cones: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5.5" fill="#ff8fc0"/><path d="M7 11h10l-5 11z" fill="#e7a95a"/></svg>',
 };
 // Original blue puppy with floppy ears (our own character).
@@ -736,8 +745,7 @@ function home() {
   }).join('');
   // Her ice cream gallery sits in the top corner, apart from the categories.
   app.innerHTML = `<div class="bar"><button class="round-btn cones-btn" data-go="gallery" aria-label="my ice creams">${ICON.cones}${S.desserts.length ? `<b>${S.desserts.length}</b>` : ''}</button>
-      <button class="round-btn cones-btn" data-go="paint" aria-label="coloring">${ICON.brush}${unlockedPages() > (S.pagesSeen || 1) ? '<b>!</b>' : ''}</button>
-      <div class="grow">${pup('small')}${starBadge()}</div>
+      <div class="grow">${starBadge()}</div>
       <button class="round-btn gear" id="gear" aria-label="parents (press and hold)">${ICON.gear}</button></div>` +
     `<div class="stage home-stage"><div class="home-scroll"><div class="cats">${tiles}
 </div></div></div>`;
@@ -776,7 +784,7 @@ function startRound(catId) {
   for (const w of fresh) if (set.length < 4 - reserve) set.push(w);
   for (const w of known.concat(learning, fresh)) if (set.length < 4 && !set.includes(w)) set.push(w);
   const teach = set.filter(w => status(w.id) !== 'known');
-  round = { cat: c, set, teach: teach.length ? teach : set, i: 0, scoops: [], concepts: [], kind: Object.keys(KINDS)[(S.rounds || 0) % 3] };
+  round = { cat: c, set, teach: teach.length ? teach : set, i: 0, scoops: [], concepts: [], kind: Object.keys(KINDS)[S.desserts.filter(d => d.k !== 'paint').length % 3] };
   // Concept practice on a word she already knows, or else one she meets in this round.
   const known2 = c.words.filter(w => !w.own && (S.words[w.id] || {}).box >= 2);
   const obj = CONCEPT_CATS.includes(c.id) && shuffle(known2.length ? known2 : set.filter(w => !w.own))[0];
@@ -927,7 +935,7 @@ function dessert() {
     app.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
       const t = b.dataset.t;
       S.desserts.push({ k: kind, s: layers, t, d: Date.now() }); if (S.desserts.length > 80) S.desserts.shift();
-      S.rounds = (S.rounds || 0) + 1; save();
+      save();
       document.getElementById('cone').innerHTML = treat(kind, layers, t);
       document.getElementById('tops').innerHTML = `<button class="next" id="done" aria-label="home">${ICON.home.replace(/#1a5fbf/g, '#fff')}</button>`;
       sfx.yay(); slowBalloons(5); say(`Great job! Your ${name}!`);
@@ -939,7 +947,7 @@ function dessert() {
 function gallery() {
   Music.on();
   onSync = gallery;
-  const items = S.desserts.slice().reverse().map(d => `<div>${treat(d.k || 'cone', d.s, d.t)}</div>`).join('');
+  const items = S.desserts.slice().reverse().map(d => `<div>${d.k === 'paint' ? pageSvg(PAGES.find(p => p.id === d.p), d.f) : treat(d.k || 'cone', d.s, d.t)}</div>`).join('');
   app.innerHTML = bar() + `<div class="stage home-stage"><div class="home-scroll">${items ? `<div class="gallery">${items}</div>` : `<div class="stage">${pup()}<div class="cone-big">${cone([])}</div></div>`}</div></div>`;
   say(S.desserts.length ? 'Your treats!' : 'Play a game, and make ice cream!');
 }
@@ -962,28 +970,19 @@ const PAGES = (() => {
 })();
 const PAINTS = [['red', '#e8383d'], ['orange', '#ff8a1f'], ['yellow', '#ffd400'], ['green', '#2fb350'], ['blue', '#2f80ed'],
   ['purple', '#8e4fd6'], ['pink', '#ff8fc0'], ['brown', '#8b5a2b'], ['black', '#222222'], ['white', '#ffffff']];
-const unlockedPages = () => Math.min(PAGES.length, 1 + (S.rounds || 0));
-function pageSvg(pg) {
-  const fills = (S.paint || {})[pg.id] || {};
+function pageSvg(pg, fills = {}) {
   return `<svg viewBox="0 0 200 200" class="page" aria-hidden="true">${pg.shapes.map((sh, i) =>
     sh.replace(/^<(\w+)/, `<$1 data-r="${i}" fill="${fills[i] || '#ffffff'}" stroke="#1b3a5c" stroke-width="3" stroke-linejoin="round"`)).join('')}</svg>`;
 }
-function paintList() {
-  Music.on();
-  onSync = paintList; sky.innerHTML = '';
-  S.pagesSeen = unlockedPages(); saveLocal();
-  app.innerHTML = bar() + `<div class="stage home-stage"><div class="home-scroll"><div class="cats">${PAGES.map((pg, i) => i < unlockedPages()
-    ? `<button class="cat" data-page="${i}" aria-label="${pg.word}">${pageSvg(pg)}</button>`
-    : `<div class="cat locked">${pageSvg(pg)}<span class="lock">🔒</span></div>`).join('')}</div></div></div>`;
-  say('Pick a picture!');
-  app.querySelectorAll('[data-page]').forEach(b => b.onclick = () => paintPage(PAGES[+b.dataset.page]));
-}
+// A fresh page to color; "done" keeps it in her gallery.
 function paintPage(pg) {
-  onSync = null;
+  onSync = null; sky.innerHTML = '';
   let color = PAINTS[4];
+  const fills = {};
   app.innerHTML = bar(`<span class="word" style="font-size:1.8rem">${pg.word}</span>`) +
     `<div class="stage"><div class="canvas" id="canvas">${pageSvg(pg)}</div>
-     <div class="paints">${PAINTS.map(([n, c], i) => `<button class="paint ${i === 4 ? 'on' : ''}" data-p="${i}" style="--c:${c}" aria-label="${n}"></button>`).join('')}</div></div>`;
+     <div class="paints">${PAINTS.map(([n, c], i) => `<button class="paint ${i === 4 ? 'on' : ''}" data-p="${i}" style="--c:${c}" aria-label="${n}"></button>`).join('')}</div>
+     <button class="next" id="done" aria-label="done">${ICON.check}</button></div>`;
   say(cap(pg.word) + '! Pick a color!');
   app.querySelectorAll('.paint').forEach(b => b.onclick = () => {
     color = PAINTS[+b.dataset.p];
@@ -992,9 +991,80 @@ function paintPage(pg) {
   });
   document.getElementById('canvas').onclick = e => {
     const sh = e.target.closest('[data-r]'); if (!sh) return;
-    sh.setAttribute('fill', color[1]); sfx.scoop();
-    S.paint = S.paint || {}; (S.paint[pg.id] = S.paint[pg.id] || {})[sh.dataset.r] = color[1]; save();
+    sh.setAttribute('fill', color[1]); sfx.scoop(); fills[sh.dataset.r] = color[1];
   };
+  document.getElementById('done').onclick = () => {
+    if (Object.keys(fills).length) { S.desserts.push({ k: 'paint', p: pg.id, f: fills, d: Date.now() }); if (S.desserts.length > 80) S.desserts.shift(); save(); }
+    sfx.yay(); slowBalloons(5); say('Beautiful! Great job!');
+    const d = document.getElementById('done'); d.innerHTML = ICON.home.replace(/#1a5fbf/g, '#fff'); d.onclick = home;
+  };
+}
+
+// End of a round: the prize takes turns between a treat, a puzzle and a coloring page from this category.
+const CAT_PAGES = { animals: ['pup', 'fish', 'butterfly'], sweets: ['icecream'], go: ['car'], colors: ['rainbow'], sky: ['rainbow', 'butterfly'] };
+function reward() {
+  const turn = (S.rounds || 0) % 3;
+  S.rounds = (S.rounds || 0) + 1; save();
+  if (turn === 0) return dessert();
+  if (turn === 1) return puzzle(pick(round.set.filter(w => w.e).concat(round.cat.words.filter(w => w.e)).slice(0, 4)));
+  const ids = CAT_PAGES[round.cat.id] || PAGES.map(p => p.id);
+  paintPage(PAGES.find(p => p.id === pick(ids)));
+}
+
+// ---------- puzzle ----------
+// A picture of a word she has met, cut into 4 pieces. She drags each piece to its place.
+function puzzle(w) {
+  Music.on(); onSync = null; sky.innerHTML = '';
+  if (!w) w = CATS[0].words[0];
+  const half = Math.floor(Math.min(innerWidth - 48, 300) / 2), size = half * 2, small = 0.5;
+  const trayTop = size + 24, trayGap = 10, trayW = half * small;
+  app.innerHTML = bar(`<span class="word" style="font-size:1.8rem">?</span>`) +
+    `<div class="stage"><div class="jig" id="play" style="width:${size}px;height:${trayTop + trayW * 1 + 20}px">
+      <div class="board" style="width:${size}px;height:${size}px"><div class="ghost" style="font-size:${size * 0.78}px">${w.e}</div>
+        ${[0, 1, 2, 3].map(i => `<i class="slot" style="left:${(i % 2) * half}px;top:${Math.floor(i / 2) * half}px;width:${half}px;height:${half}px"></i>`).join('')}</div>
+    </div><button class="next" id="again" aria-label="home" hidden>${ICON.home.replace(/#1a5fbf/g, '#fff')}</button></div>`;
+  const play = document.getElementById('play');
+  const trayX = i => (size - 4 * trayW - 3 * trayGap) / 2 + i * (trayW + trayGap);
+  let placed = 0;
+  shuffle([0, 1, 2, 3]).forEach((i, k) => {
+    const pc = document.createElement('div');
+    pc.className = 'piece';
+    pc.style.width = pc.style.height = half + 'px';
+    pc.innerHTML = `<div class="piece-in" style="width:${size}px;height:${size}px;left:${-(i % 2) * half}px;top:${-Math.floor(i / 2) * half}px;font-size:${size * 0.78}px">${w.e}</div>`;
+    const home = { x: trayX(k), y: trayTop }, goal = { x: (i % 2) * half, y: Math.floor(i / 2) * half };
+    const put = (x, y, sc) => { pc.style.left = x + 'px'; pc.style.top = y + 'px'; pc.style.transform = `scale(${sc})`; };
+    put(home.x, home.y, small);
+    let drag = null;
+    pc.addEventListener('pointerdown', e => {
+      if (pc.classList.contains('done')) return;
+      e.preventDefault(); pc.setPointerCapture(e.pointerId);
+      const r = play.getBoundingClientRect();
+      drag = { r }; pc.classList.add('drag');
+      put(e.clientX - r.left - half / 2, e.clientY - r.top - half / 2, 1);
+    });
+    pc.addEventListener('pointermove', e => {
+      if (!drag) return;
+      put(e.clientX - drag.r.left - half / 2, e.clientY - drag.r.top - half / 2, 1);
+    });
+    const drop = () => {
+      if (!drag) return;
+      drag = null; pc.classList.remove('drag');
+      const x = parseFloat(pc.style.left), y = parseFloat(pc.style.top);
+      if (Math.hypot(x - goal.x, y - goal.y) < half * 0.6) {
+        put(goal.x, goal.y, 1); pc.classList.add('done'); sfx.scoop(); placed++;
+        if (placed === 4) finish();
+      } else { put(home.x, home.y, small); sfx.oops(); }
+    };
+    pc.addEventListener('pointerup', drop); pc.addEventListener('pointercancel', drop);
+    play.appendChild(pc);
+  });
+  say("Let's make a puzzle!");
+  function finish() {
+    play.classList.add('solved'); sfx.fanfare(); slowBalloons(4);
+    app.querySelector('.bar .word').textContent = w.w;
+    setTimeout(() => speak('learn:' + w.id, cap(w.w) + '! ' + w.learn), 500);
+    const again = document.getElementById('again'); again.hidden = false; again.onclick = home;
+  }
 }
 
 // ---------- balloons ----------
@@ -1036,7 +1106,7 @@ function party() {
   const n = 8; let popped = 0, gone = 0;
   app.innerHTML = bar(`<span class="pop-count" id="pc">0</span>`) + `<div class="stage">${pup()}</div>`;
   say('Pop the balloons!');
-  const check = () => { if (popped + gone === n) setTimeout(dessert, 900); };
+  const check = () => { if (popped + gone === n) setTimeout(reward, 900); };
   for (let i = 0; i < n; i++) balloon(BALLOON[i % BALLOON.length], {
     delay: 0.8 + i * 0.8, slow: true,
     onPop: () => { popped++; const pc = document.getElementById('pc'); if (pc) pc.textContent = popped; say(NUMS[popped - 1] + '!'); check(); },
@@ -1164,7 +1234,7 @@ function recordings() {
 
 app.addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (!g) return;
-  if (g.dataset.go === 'home') home(); else if (g.dataset.go === 'gallery') gallery(); else if (g.dataset.go === 'paint') paintList();
+  if (g.dataset.go === 'home') home(); else if (g.dataset.go === 'gallery') gallery();
 });
 if ('serviceWorker' in navigator && /github\.io$/.test(location.hostname)) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
