@@ -93,6 +93,7 @@
   const EN_INDEX = {};
   ALL_IDS.forEach((id) => { EN_INDEX[W[id].en.toLowerCase()] = id; });
   const SPELL_COINS = 3;             // per word in the optional spelling challenge
+  const EXTRA_PAID = 4;              // extra rounds a day that earn coins (more still earn trophies)
   const BY_CAT = {};
   ALL_IDS.forEach((id) => { (BY_CAT[W[id].cat] = BY_CAT[W[id].cat] || []).push(id); });
 
@@ -573,6 +574,16 @@
       quiz, qIdx: 0, firstTry: {}, retried: {}, combo: 0, bestCombo: 0, trophies: 0, right: 0, total: 0, complexRight: 0,
       bonus: true,
     };
+  }
+
+  // ---------- Extra rounds ----------
+  // Learning more on a given day earns more: new words pay more than review.
+  function extraCoins(s) {
+    return s.fresh.length ? 3 + Math.floor(s.right / 3) + s.complexRight : 1 + Math.floor(s.right / 3);
+  }
+  function extraPaidLeft(day) {
+    const x = profile.extraPaid && profile.extraPaid.day === day ? profile.extraPaid.n : 0;
+    return Math.max(0, EXTRA_PAID - x);
   }
 
   // ---------- Streak, coins & city ----------
@@ -1198,6 +1209,10 @@
       chest = rollChest();
       doubleDay = siblingPlayedToday(day);
       team = bumpWeekly(day);
+    } else if (extraPaidLeft(day) > 0) {
+      coins = extraCoins(session);
+      profile.coins += coins;
+      profile.extraPaid = { day, n: EXTRA_PAID - extraPaidLeft(day) + 1 };
     }
     save();
     sfx.win();
@@ -1210,7 +1225,7 @@
         <div class="summary card">
           <div><b>${session.right}/${session.total}</b><span>נכון בפעם הראשונה</span></div>
           <div><b>+${session.trophies}</b><span>🏆 גביעים</span></div>
-          ${session.bonus ? '' : `<div><b>+${coins}</b><span>🪙 מטבעות</span></div>`}
+          ${session.bonus && !coins ? '' : `<div><b>+${coins}</b><span>🪙 מטבעות</span></div>`}
         </div>
         ${session.bonus ? '' : `<p class="muted small">🔥 ${profile.streak} ימים ברצף</p>`}
         ${streakInfo.used ? `<p class="note">🛡️ מגן רצף שמר על הרצף שלך!</p>` : ''}
@@ -1458,7 +1473,7 @@
         </section>
         <section class="card">
           <h3>🎁 פרסים אמיתיים</h3>
-          <p class="muted small">כל משימה יומית מביאה בערך ${perDay} מטבעות, ויש בונוסים על רצף ימים. כשיש מספיק מטבעות מבקשים את הפרס, והורה מאשר.</p>
+          <p class="muted small">כל משימה יומית מביאה בערך ${perDay} מטבעות, ויש בונוסים על רצף ימים. מי שבוחר ללמוד עוד באותו יום (אימון נוסף) מרוויח עוד מטבעות. כשיש מספיק מטבעות מבקשים את הפרס, והורה מאשר.</p>
           ${data.shared.prizes.map((p) => `<div class="tour-prize"><span class="pe">${esc(p.emoji)}</span><span class="grow">${esc(p.name)}</span><span class="coins">🪙 ${p.cost}</span><span class="small muted">כ-${Math.ceil(p.cost / perDay)} ימים</span></div>`).join('')}
           <p class="muted small">יש לכם רעיון לפרס אחר? אפשר להציע אותו בחנות.</p>
         </section>
@@ -1484,6 +1499,7 @@
   function screenDone() {
     themeClass();
     const day = todayNum();
+    const paidLeft = extraPaidLeft(day);
     const others = Object.values(data.profiles).filter((p) => p.id !== profile.id);
     h(`
       <main class="screen center">
@@ -1493,9 +1509,11 @@
         ${others.map((p) => `<p class="note">${avatar(p.avatar)} ${esc(p.name)} ${p.lastSessionDay === day ? `כבר ${g(p, 'סיים', 'סיימה')} היום ✓` : `עוד לא ${g(p, 'שיחק', 'שיחקה')} היום. אולי תזכירו?`}</p>`).join('')}
         <section class="card done-card">
           <h3>בא לך עוד?</h3>
-          <p class="muted small">רק אם בא לך. אפשר גם לדלג ולחזור מחר.</p>
-          <button class="btn primary big" id="extra-new">✨ 3 מילים חדשות</button>
-          <button class="btn ghost" id="extra">🔁 אימון על מילים שלמדתי</button>
+          <p class="muted small">${paidLeft
+            ? `רק אם בא לך. מי שלומד יותר מרוויח יותר מטבעות! (עוד ${paidLeft} ${paidLeft === 1 ? 'אימון' : 'אימונים'} עם מטבעות היום)`
+            : 'היום כבר הרווחת מטבעות על כל האימונים הנוספים. אפשר להמשיך בשביל הגביעים 🏆'}</p>
+          <button class="btn primary big" id="extra-new">✨ 3 מילים חדשות${paidLeft ? ' · עד 🪙 6' : ''}</button>
+          <button class="btn ghost" id="extra">🔁 אימון על מילים שלמדתי${paidLeft ? ' · עד 🪙 3' : ''}</button>
         </section>
         <button class="btn ghost" id="home">למסך הבית</button>
       </main>`);
