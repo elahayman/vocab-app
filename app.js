@@ -92,7 +92,21 @@
   });
   const EN_INDEX = {};
   ALL_IDS.forEach((id) => { EN_INDEX[W[id].en.toLowerCase()] = id; });
+  // Words a parent added for one kid (e.g. for a test at school), shared by all devices.
+  function registerCustomWords() {
+    const general = window.CATEGORIES.indexOf('כללי');
+    (data.shared.customWords || []).forEach(([id, en, he]) => {
+      if (W[id]) return;
+      W[id] = { id, en, he, cat: general, stage: 1, basic: false, sent: '', complex: false, custom: true };
+      ALL_IDS.push(id);
+      EN_INDEX[en.toLowerCase()] = id;
+      (BY_CAT[general] = BY_CAT[general] || []).push(id);
+    });
+  }
   const SPELL_COINS = 3;             // per word in the optional spelling challenge
+  const FOCUS_NEW = 6;               // test words taught per day (instead of the regular new words)
+  const FOCUS_MAX_NEW = 10;          // ...or up to this many when the test is close
+  const FOCUS_OLD = 8;               // test words already seen, asked again every day until the test
   const BY_CAT = {};
   ALL_IDS.forEach((id) => { (BY_CAT[W[id].cat] = BY_CAT[W[id].cat] || []).push(id); });
 
@@ -125,6 +139,9 @@
     s.decisions = s.decisions || {};
     s.weekly = s.weekly || {};
     s.weeklyClaimed = s.weeklyClaimed || {};
+    s.focus = s.focus || {};
+    s.customWords = s.customWords || [];
+    registerCustomWords();
   }
   normalizeShared();
 
@@ -390,18 +407,34 @@
   }
 
   // Today's new words: mostly regular words (stage 1 -> 3 in order) plus a few challenge words.
-  function newWordsFor(nRegular, nComplex) {
-    const reg = firstUnseen(REGULAR_IDS, nRegular);
-    let cpx = firstUnseen(COMPLEX_IDS, nComplex);
+  function newWordsFor(nRegular, nComplex, skip = []) {
+    const reg = firstUnseen(REGULAR_IDS, nRegular, skip);
+    let cpx = firstUnseen(COMPLEX_IDS, nComplex, skip);
     if (cpx.length < nComplex) {
       // Challenge list finished: take the hardest regular words still unseen instead.
-      const tail = REGULAR_IDS.slice().reverse().filter((id) => !profile.words[id] && !reg.includes(id));
+      const tail = REGULAR_IDS.slice().reverse().filter((id) => !profile.words[id] && !reg.includes(id) && !skip.includes(id));
       cpx = cpx.concat(tail.slice(0, nComplex - cpx.length));
     }
     if (reg.length < nRegular) {
-      cpx = cpx.concat(firstUnseen(COMPLEX_IDS, nRegular - reg.length, cpx));
+      cpx = cpx.concat(firstUnseen(COMPLEX_IDS, nRegular - reg.length, cpx.concat(skip)));
     }
     return { reg, cpx };
+  }
+
+  // Test words a parent set for this kid: active until the day of the test (or until cleared).
+  function focusOf(p, day) {
+    const f = data.shared.focus[p.id];
+    if (!f || !f.ids.length || (f.until && day > f.until)) return null;
+    return f.ids.filter((id) => W[id]);
+  }
+  // Unseen test words are taught first; seen ones are asked every day, least recently asked first.
+  function focusPick(day, nNew, nOld, skip = []) {
+    const ids = focusOf(profile, day) || [];
+    const fresh = ids.filter((id) => !profile.words[id] && !skip.includes(id)).slice(0, nNew);
+    const old = ids.filter((id) => profile.words[id] && !skip.includes(id))
+      .sort((a, b) => (profile.words[a].last || 0) - (profile.words[b].last || 0) || profile.words[a].lvl - profile.words[b].lvl)
+      .slice(0, nOld);
+    return { fresh, old };
   }
 
   function newState(day) {
@@ -511,16 +544,28 @@
     let nReg = set.regular;
     let nCpx = set.complex;
     if (due.length > REVIEW_HEAVY) { nReg = 0; nCpx = 0; } else if (due.length > REVIEW_BUSY) { nReg = Math.ceil(nReg / 2); nCpx = Math.min(nCpx, 1); }
-    const { reg, cpx } = newWordsFor(nReg, nCpx);
+    // Test words take the place of today's regular new words (then of the challenge ones).
+    // With a test date, enough test words are taught each day to cover them all before the test.
+    const f = data.shared.focus[profile.id];
+    const unseen = (focusOf(profile, day) || []).filter((id) => !profile.words[id]).length;
+    const perDay = f && f.until ? Math.min(FOCUS_MAX_NEW, Math.max(FOCUS_NEW, Math.ceil(unseen / Math.max(1, f.until - day)))) : FOCUS_NEW;
+    const focus = focusPick(day, perDay, FOCUS_OLD);
+    const extra = Math.max(0, focus.fresh.length - nReg);
+    nReg = Math.max(0, nReg - focus.fresh.length);
+    nCpx = Math.max(0, nCpx - extra);
+    const { reg, cpx } = newWordsFor(nReg, nCpx, focus.fresh.concat(focus.old));
     // Learn in a mixed order, but never open with a challenge word.
-    const fresh = reg.length ? [reg[0], ...shuffle(reg.slice(1).concat(cpx))] : cpx;
-    const reviewSlots = MAX_REVIEWS;
-    const reviews = due.slice(0, reviewSlots);
+    const first = focus.fresh.concat(reg);
+    const fresh = first.length ? [first[0], ...shuffle(first.slice(1).concat(cpx))] : cpx;
+    const reviews = due.filter((id) => !focus.old.includes(id)).slice(0, Math.max(0, MAX_REVIEWS - focus.old.length));
+    // Test words asked before they are due: practice only, they can demote a word but not promote it.
+    const early = focus.old.filter((id) => !due.includes(id));
     // Early on there is little to review: fill the quiz with basic words they should already know.
-    const known = firstUnseen(BASIC_IDS, Math.max(0, QUIZ_SIZE - fresh.length - reviews.length), fresh);
+    const known = firstUnseen(BASIC_IDS, Math.max(0, QUIZ_SIZE - fresh.length - reviews.length - focus.old.length), fresh.concat(focus.old));
     const quiz = [];
     fresh.forEach((id) => quiz.push(makeQuestion(id, 'meaning')));
     reviews.forEach((id) => quiz.push(makeQuestion(id, reviewType(profile.words[id].lvl, W[id].cat))));
+    focus.old.forEach((id) => quiz.push(makeQuestion(id, reviewType(Math.max(2, profile.words[id].lvl), W[id].cat))));
     known.forEach((id) => quiz.push(makeQuestion(id, Math.random() < 0.35 ? 'sentence' : 'meaning')));
     // Start the quiz with an easy win: a known word if there is one.
     let ordered = shuffle(quiz);
@@ -528,7 +573,7 @@
     if (easy > 0) ordered = [ordered[easy], ...ordered.filter((_, i) => i !== easy)];
     markAsked(day, ordered);
     return {
-      day, fresh, reviews, known,
+      day, fresh, reviews, known, early,
       learnIdx: 0, revealed: false,
       quiz: ordered,
       qIdx: 0,
@@ -554,12 +599,15 @@
     const t = askedToday(day);
     let fresh = [];
     if (withNew) {
-      const { reg, cpx } = newWordsFor(2, 1);
-      fresh = reg.concat(cpx);
+      const focusNew = focusPick(day, 3, 0).fresh;
+      const { reg, cpx } = newWordsFor(Math.max(0, 2 - focusNew.length), Math.max(0, Math.min(1, 3 - focusNew.length)), focusNew);
+      fresh = focusNew.concat(reg, cpx);
     }
+    const focus = focusOf(profile, day) || [];
     const seen = Object.keys(profile.words).map(Number).filter((id) => profile.words[id].lvl >= 1 && !fresh.includes(id));
-    // Words not asked yet today come first; the rest only fill in if there are not enough.
-    const ids = shuffle(seen.filter((id) => !t.ids.includes(id))).concat(shuffle(seen.filter((id) => t.ids.includes(id))))
+    // Test words first, then words not asked yet today; the rest only fill in if there are not enough.
+    const order = (list) => shuffle(list.filter((id) => !t.ids.includes(id))).concat(shuffle(list.filter((id) => t.ids.includes(id))));
+    const ids = order(seen.filter((id) => focus.includes(id))).concat(order(seen.filter((id) => !focus.includes(id))))
       .slice(0, withNew ? 5 : 8);
     const typeFor = (id) => {
       const used = t.types[id] || [];
@@ -647,6 +695,11 @@
   }
 
   // Hebrew verb forms by the player's gender ('m' / 'f'); the neutral form until it is set.
+  function daysLeft(n) {
+    return n <= 0 ? 'המבחן היום' : n === 1 ? 'המבחן מחר' : `עוד ${n} ימים למבחן`;
+  }
+  function dateOfDay(day) { return new Date(day * 86400000).toISOString().slice(0, 10); }
+
   function g(p, m, f) {
     return p && p.gender === 'm' ? m : p && p.gender === 'f' ? f : `${m}/${f}`;
   }
@@ -873,6 +926,7 @@
             : `<div class="big-emoji">${profile.streak ? '🔥' : '🦸'}</div>
                <h2>${profile.streak ? `יום ${profile.streak + 1} ברצף מחכה לך` : 'המשימה של היום'}</h2>
                <p class="muted">${set.regular} מילים חדשות + ${set.complex} מאתגרות 💪${due ? ` · ${due} לחזרה` : ''}</p>
+               ${focusOf(profile, day) ? `<p class="small">📝 היום מתאמנים גם על המילים למבחן${data.shared.focus[profile.id].until ? ` (${daysLeft(data.shared.focus[profile.id].until - day)})` : ''}</p>` : ''}
                <button class="btn primary big" id="start">יוצאים למשימה</button>`}
         </section>
 
@@ -949,7 +1003,7 @@
     h(`
       <main class="screen">
         <header class="qbar"><button class="x" id="quit" aria-label="יציאה">✕</button>${progressBar()}</header>
-        <p class="tag">מילה חדשה ${session.learnIdx + 1}/${session.fresh.length} ${w.complex ? '<span class="pill hard">💪 מילה מאתגרת</span>' : ''}</p>
+        <p class="tag">מילה חדשה ${session.learnIdx + 1}/${session.fresh.length} ${w.complex ? '<span class="pill hard">💪 מילה מאתגרת</span>' : ''}${(focusOf(profile, session.day) || []).includes(id) ? '<span class="pill wait">📝 למבחן</span>' : ''}</p>
         <section class="card wordcard ${w.complex ? 'complex' : ''}">
           <button class="speak" id="say" aria-label="השמעה">🔊</button>
           <div class="en" dir="ltr">${esc(w.en)}</div>
@@ -1071,8 +1125,10 @@
       session.firstTry[q.id] = correct;
       session.total++;
       if (session.known.includes(q.id)) gradeKnownCheck(q.id, correct, q.type, session.day);
-      // Bonus rounds review words early, so they can demote a word but never promote it.
-      else if (!session.bonus || !correct || session.fresh.includes(q.id)) grade(q.id, correct, q.type, session.day);
+      // Bonus rounds and early test-word practice can demote a word but never promote it.
+      else if ((!session.bonus && !(session.early || []).includes(q.id)) || !correct || session.fresh.includes(q.id)) grade(q.id, correct, q.type, session.day);
+      // For the parent's test-word list: how the last answer went.
+      if ((focusOf(profile, session.day) || []).includes(q.id) && profile.words[q.id]) profile.words[q.id].ok = correct;
     }
     const next = document.createElement('button');
     next.className = 'btn primary big';
@@ -1597,6 +1653,51 @@
     else await dialog({ text: 'סיסמה לא נכונה', cancel: '' });
   }
 
+  // Parent screen: test words for one kid. Each word shows whether it was answered right last time.
+  function focusCard(p, day) {
+    const f = data.shared.focus[p.id];
+    const ids = (f && f.ids.filter((id) => W[id])) || [];
+    const active = !!focusOf(p, day);
+    const mark = (id) => {
+      const s = p.words[id];
+      if (!s) return '⬜';
+      return (s.ok === undefined ? s.lvl >= 2 : s.ok) ? '✅' : '🟨';
+    };
+    return `<div class="focus-edit">
+      <h4>📝 מילים למבחן</h4>
+      ${ids.length ? `<p class="small">${active ? (f.until ? daysLeft(f.until - day) : 'פעיל עד שמנקים') : 'המבחן עבר, המילים כבר לא מקבלות עדיפות'}</p>
+        <p class="small" dir="ltr">${ids.map((id) => `${mark(id)} ${esc(W[id].en)}`).join(' · ')}</p>
+        <p class="muted small">⬜ עוד לא נלמדה · 🟨 בלמידה · ✅ ${g(p, 'ענה', 'ענתה')} נכון בפעם האחרונה</p>` : ''}
+      <p class="muted small">מילים באנגלית, מופרדות בפסיק או בשורה. הן יילמדו קודם ויחזרו בכל משימה עד יום המבחן.</p>
+      <textarea id="focus-words-${p.id}" dir="ltr" rows="3">${esc(ids.map((id) => W[id].en).join(', '))}</textarea>
+      <label class="small">יום המבחן (לא חובה) <input type="date" id="focus-until-${p.id}" value="${f && f.until ? dateOfDay(f.until) : ''}"></label>
+      <div class="row-gap"><button class="btn primary sm" data-focus-save="${p.id}">שמירה</button>
+        ${ids.length ? `<button class="btn ghost sm" data-focus-clear="${p.id}">ניקוי הרשימה</button>` : ''}</div>
+    </div>`;
+  }
+
+  async function saveFocus(pid) {
+    const words = [...new Set(document.getElementById('focus-words-' + pid).value.toLowerCase()
+      .split(/[,\n;]+/).map((x) => x.trim().replace(/\s+/g, ' ')).filter(Boolean))];
+    const until = document.getElementById('focus-until-' + pid).value;
+    const ids = [];
+    for (const en of words) {
+      let id = EN_INDEX[en];
+      if (!id) {
+        // Not in the word bank yet: ask for the meaning and add it for the whole family.
+        const he = await dialog({ text: `המילה "${en}" לא נמצאת במאגר. מה הפירוש בעברית? (ריק = לדלג)`, input: true, numeric: false });
+        if (!he || !he.trim()) continue;
+        do id = 100000 + Math.floor(Math.random() * 900000); while (W[id]);
+        data.shared.customWords.push([id, en, he.trim()]);
+        registerCustomWords();
+      }
+      ids.push(id);
+    }
+    data.shared.focus[pid] = { ids, until: until ? Math.floor(Date.parse(until) / 86400000) : null };
+    Store.saveShared(data.shared);
+    screenParent();
+  }
+
   function screenParent() {
     const day = todayNum();
     const ps = Object.values(data.profiles);
@@ -1640,6 +1741,7 @@
             <div class="kv"><span>נותרו במאגר</span><b>${ALL_IDS.length - st.seen}</b></div>
             <div class="kv"><span>מטבעות</span><b>🪙 ${p.coins}</b></div>
             ${st.hard.length ? `<div class="hard"><b>מילים עקשניות:</b> <span dir="ltr">${st.hard.slice(0, 20).map((id) => esc(W[id].en)).join(', ')}</span></div>` : ''}
+            ${focusCard(p, day)}
             <button class="link danger" data-del="${p.id}">מחיקת שחקן</button>
           </section>`;
         }).join('')}
@@ -1707,6 +1809,12 @@
       const p = data.profiles[e.currentTarget.dataset.gender];
       p.gender = e.currentTarget.value || undefined;
       Store.saveProfile(p);
+    });
+    on('[data-focus-save]', 'click', (e) => saveFocus(e.currentTarget.dataset.focusSave));
+    on('[data-focus-clear]', 'click', (e) => {
+      delete data.shared.focus[e.currentTarget.dataset.focusClear];
+      Store.saveShared(data.shared);
+      screenParent();
     });
     on('[data-approve]', 'click', (e) => decide(e.currentTarget.dataset.approve, true));
     on('[data-decline]', 'click', (e) => decide(e.currentTarget.dataset.decline, false));
