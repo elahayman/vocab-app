@@ -107,7 +107,7 @@
   const FOCUS_NEW = 6;               // test words taught per day (instead of the regular new words)
   const FOCUS_MAX_NEW = 10;          // ...or up to this many when the test is close
   const FOCUS_OLD = 8;               // test words already seen, asked again every day until the test
-  const EXTRA_SURPRISE = 0.3;        // chance that an extra round pays double (a surprise keeps it exciting)
+  const EXTRA_BONUS = 0.3;           // chance that an extra round pays 2 coins instead of 1 (a little surprise)
   const BY_CAT = {};
   ALL_IDS.forEach((id) => { (BY_CAT[W[id].cat] = BY_CAT[W[id].cat] || []).push(id); });
 
@@ -625,12 +625,10 @@
   }
 
   // ---------- Extra rounds ----------
-  // Learning more on a given day earns more, with no daily limit: new words pay more than review,
-  // and sometimes the round pays double.
-  function extraCoins(s) {
-    const base = s.fresh.length ? 3 + Math.floor(s.right / 3) + s.complexRight : 1 + Math.floor(s.right / 3);
-    const surprise = Math.random() < EXTRA_SURPRISE;
-    return { coins: surprise ? base * 2 : base, surprise };
+  // Every extra round earns a little, with no daily limit: 1 coin, sometimes 2.
+  function extraCoins() {
+    const surprise = Math.random() < EXTRA_BONUS;
+    return { coins: surprise ? 2 : 1, surprise };
   }
 
   // ---------- Streak, coins & city ----------
@@ -1266,7 +1264,7 @@
       doubleDay = siblingPlayedToday(day);
       team = bumpWeekly(day);
     } else {
-      ({ coins, surprise } = extraCoins(session));
+      ({ coins, surprise } = extraCoins());
       profile.coins += coins;
     }
     save();
@@ -1275,7 +1273,7 @@
     const pct = session.total ? Math.round((session.right / session.total) * 100) : 100;
     h(`
       <main class="screen center">
-        ${surprise ? `<div class="milestone pop">🎲 הפתעה! המטבעות כפולים</div>` : ''}
+        ${surprise ? `<div class="milestone pop">🎲 הפתעה! עוד מטבע</div>` : ''}
         ${milestone ? `<div class="milestone pop">🏆 ${milestone} ימים ברצף! +${MILESTONES[milestone]} 🪙</div>` : ''}
         <h1>${session.bonus ? (session.fresh.length ? `למדת עוד ${session.fresh.length} מילים!` : 'האימון הנוסף הושלם') : pct >= 80 ? 'משימה הושלמה!' : pct >= 50 ? 'יפה מאוד!' : 'עבודה טובה!'}</h1>
         <div class="summary card">
@@ -1564,7 +1562,7 @@
         ${others.map((p) => `<p class="note">${avatar(p.avatar)} ${esc(p.name)} ${p.lastSessionDay === day ? `כבר ${g(p, 'סיים', 'סיימה')} היום ✓` : `עוד לא ${g(p, 'שיחק', 'שיחקה')} היום. אולי תזכירו?`}</p>`).join('')}
         <section class="card done-card">
           <h3>בא לך עוד?</h3>
-          <p class="muted small">רק אם בא לך. כל אימון נוסף מביא עוד מטבעות, ולפעמים יש הפתעה ומקבלים פי 2 🎲</p>
+          <p class="muted small">רק אם בא לך. כל אימון נוסף מביא מטבע, ולפעמים יש הפתעה ומקבלים שניים 🎲</p>
           <button class="btn primary big" id="extra-new">✨ 3 מילים חדשות · 🪙</button>
           <button class="btn ghost" id="extra">🔁 אימון על מילים שלמדתי · 🪙</button>
         </section>
