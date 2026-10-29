@@ -5,10 +5,12 @@
 //   families/{code}/members/{uid} one per device that joined (anonymous sign-in)
 //   families/{code}/data/shared   the shared city, prizes, feed and settings
 //   families/{code}/profiles/{id} one per player
+//   families/{code}/data/push~{uid} this device's daily reminder (read by .github/reminders/send.mjs)
 // Documents hold the object as JSON text, so Firestore's type limits never apply.
 (function () {
   const KEY = 'vocab-city-v2';
   const FAMILY_KEY = 'vocab-city-family';
+  const REMIND_KEY = 'vocab-city-reminder';
   const SDK = 'https://www.gstatic.com/firebasejs/10.14.1/';
   const FEED_MAX = 40;
 
@@ -210,10 +212,51 @@
     return code;
   }
 
+  // ---------- Daily reminder (web push through Firebase Cloud Messaging) ----------
+  const vapidKey = window.FIREBASE_VAPID_KEY || null;
+  const pushDoc = () => fam().collection('data').doc('push~' + uid);
+
+  function getReminder() {
+    try { return JSON.parse(localStorage.getItem(REMIND_KEY)) || null; } catch (e) { return null; }
+  }
+
+  async function messaging() {
+    await start();
+    if (!firebase.messaging) await loadScript(SDK + 'firebase-messaging-compat.js');
+    return firebase.messaging();
+  }
+
+  async function enableReminder(profileId, hour) {
+    if (Notification.permission !== 'granted' && (await Notification.requestPermission()) !== 'granted') {
+      throw new Error('denied');
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const token = await (await messaging()).getToken({ vapidKey, serviceWorkerRegistration: reg });
+    if (!token) throw new Error('no token');
+    await pushDoc().set({ token, profileId, hour, updatedAt: Date.now() });
+    const r = { profileId, hour };
+    try { localStorage.setItem(REMIND_KEY, JSON.stringify(r)); } catch (e) { /* ignore */ }
+    return r;
+  }
+
+  async function disableReminder() {
+    await start();
+    await pushDoc().delete();
+    try { await (await messaging()).deleteToken(); } catch (e) { /* the token is already gone */ }
+    try { localStorage.removeItem(REMIND_KEY); } catch (e) { /* ignore */ }
+  }
+
   window.Store = {
     // True when Firebase is set up for this app (even before this device joins a family).
     syncAvailable: !!config,
     family: getFamily,
+    // Reminders need sync (the sender reads Firestore), a push key, and a browser that can receive push.
+    // On iPhone, push only exists once the app is added to the home screen.
+    pushConfigured: !!(config && vapidKey),
+    pushAvailable: !!(config && vapidKey && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window),
+    reminder: getReminder,
+    enableReminder,
+    disableReminder,
 
     loadAll() {
       const d = read();

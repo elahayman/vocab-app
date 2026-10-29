@@ -1,0 +1,34 @@
+# Daily reminders for עיר המילים. Needs the repository secret FIREBASE_SERVICE_ACCOUNT
+# (Firebase console → Project settings → Service accounts → Generate new private key; paste the whole file).
+name: Daily reminders
+
+on:
+  schedule:
+    - cron: '5 11-19 * * *' # hourly, 13:05–21:05 Israel time in winter and 14:05–22:05 in summer; the script picks who is due
+  workflow_dispatch:
+
+permissions:
+  actions: write # for the keep-alive step below
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/reminders
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+        working-directory: .github/reminders
+      - run: node send.mjs
+        working-directory: .github/reminders
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      # GitHub pauses scheduled workflows after 60 days without commits. Re-enabling it keeps the reminders going.
+      - name: Keep the schedule alive
+        if: always()
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/reminders.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}

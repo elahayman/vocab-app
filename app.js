@@ -918,6 +918,7 @@
           <button class="link" id="parent">הורים</button>
           <button class="link" id="tour">👀 מה אפשר להשיג</button>
           <button class="link" id="mute">${profile.mute ? '🔇 צלילים כבויים' : '🔊 צלילים'}</button>
+          ${Store.pushConfigured && Store.family() ? `<button class="link" id="remind">${reminderMine() ? '🔔 תזכורת' : '🔕 תזכורת'}</button>` : ''}
         </footer>
       </main>`);
     on('#switch', 'click', screenProfiles);
@@ -936,6 +937,60 @@
     on('#parent', 'click', screenParentGate);
     on('#tour', 'click', () => screenTour(screenHome));
     on('#mute', 'click', () => { profile.mute = !profile.mute; save(); screenHome(); });
+    on('#remind', 'click', screenReminder);
+  }
+
+  // ---------- Daily reminder ----------
+  // One reminder per phone, for the player who turned it on. It is skipped on days the mission is already done.
+  const REMIND_HOURS = [14, 15, 16, 17, 18, 19, 20];
+  function reminderMine() {
+    const r = Store.reminder();
+    return r && r.profileId === profile.id ? r : null;
+  }
+
+  function screenReminder() {
+    themeClass();
+    const r = Store.reminder();
+    const mine = reminderMine();
+    const other = r && !mine && data.profiles[r.profileId];
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const blocked = Store.pushAvailable && Notification.permission === 'denied';
+    const hour = (mine && mine.hour) || 17;
+    h(`
+      <main class="screen">
+        <header class="topbar"><button class="chip" id="back">→ חזרה</button><h2 class="grow">תזכורת יומית</h2></header>
+        <section class="card done-card">
+          <div class="big-emoji">${mine ? '🔔' : '🔕'}</div>
+          ${!Store.pushAvailable
+            ? `<p>${ios ? 'באייפון התזכורת עובדת רק מהאייקון במסך הבית. בספארי לוחצים על כפתור השיתוף ⬆️, בוחרים "הוספה למסך הבית", ופותחים את האפליקציה משם.' : 'הדפדפן הזה לא יודע לקבל תזכורות. כדאי לפתוח את האפליקציה בכרום.'}</p>`
+            : `<p>${mine ? `כל יום בשעה <b>${mine.hour}:00</b> הטלפון יזכיר לך את המשימה. ביום שכבר סיימת את המשימה, לא תגיע תזכורת.` : 'הטלפון יזכיר לך כל יום לעשות את המשימה, רק אם עוד לא עשית אותה.'}</p>
+               ${other ? `<p class="note">כרגע התזכורת בטלפון הזה היא של ${esc(other.name)}. הפעלה כאן תעביר אותה אליך.</p>` : ''}
+               <div class="kv"><span>באיזו שעה?</span><select id="remind-hour">${REMIND_HOURS.map((x) => `<option value="${x}" ${x === hour ? 'selected' : ''}>${x}:00</option>`).join('')}</select></div>
+               <button class="btn primary big" id="remind-on">${mine ? 'שמירה' : '🔔 להפעיל תזכורת'}</button>
+               ${mine ? '<button class="btn ghost" id="remind-off">לכבות את התזכורת</button>' : ''}
+               ${blocked ? '<p class="note">ההתראות חסומות לאתר הזה. בכרום: לוחצים על ⋮ ← הגדרות ← הגדרות אתרים ← התראות, ומאפשרים את האתר.</p>' : ''}`}
+          <p class="muted small" id="remind-msg"></p>
+        </section>
+      </main>`);
+    const msg = (t) => { document.getElementById('remind-msg').textContent = t; };
+    const busy = (b) => document.querySelectorAll('#remind-on, #remind-off').forEach((x) => { x.disabled = b; });
+    on('#back', 'click', screenHome);
+    on('#remind-on', 'click', async () => {
+      busy(true); msg('מפעיל…');
+      try {
+        await Store.enableReminder(profile.id, Number(document.getElementById('remind-hour').value));
+        sfx.right();
+        screenReminder();
+        msg('מעולה! התזכורת מופעלת.');
+      } catch (e) {
+        busy(false);
+        msg(e.message === 'denied' ? 'צריך לאשר התראות כדי לקבל תזכורת.' : 'לא הצלחנו להפעיל. בדקו שיש אינטרנט ונסו שוב.');
+      }
+    });
+    on('#remind-off', 'click', async () => {
+      busy(true);
+      try { await Store.disableReminder(); screenReminder(); } catch (e) { busy(false); msg('לא הצלחנו לכבות. בדקו שיש אינטרנט ונסו שוב.'); }
+    });
   }
 
   // ---------- Learn ----------

@@ -8,3 +8,7 @@ window.FIREBASE_CONFIG = {
   messagingSenderId: '383713669064',
   appId: '1:383713669064:web:3927e2be00044a4c171afd',
 };
+
+// Public key for the daily reminder (Firebase console → Project settings → Cloud Messaging →
+// Web Push certificates → Key pair). null = the reminder button stays hidden.
+window.FIREBASE_VAPID_KEY = null;
