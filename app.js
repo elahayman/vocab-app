@@ -107,7 +107,7 @@
   const FOCUS_NEW = 6;               // test words taught per day (instead of the regular new words)
   const FOCUS_MAX_NEW = 10;          // ...or up to this many when the test is close
   const FOCUS_OLD = 8;               // test words already seen, asked again every day until the test
-  const EXTRA_PAID = 4;              // extra rounds a day that earn coins (more still earn trophies)
+  const EXTRA_SURPRISE = 0.3;        // chance that an extra round pays double (a surprise keeps it exciting)
   const BY_CAT = {};
   ALL_IDS.forEach((id) => { (BY_CAT[W[id].cat] = BY_CAT[W[id].cat] || []).push(id); });
 
@@ -625,13 +625,12 @@
   }
 
   // ---------- Extra rounds ----------
-  // Learning more on a given day earns more: new words pay more than review.
+  // Learning more on a given day earns more, with no daily limit: new words pay more than review,
+  // and sometimes the round pays double.
   function extraCoins(s) {
-    return s.fresh.length ? 3 + Math.floor(s.right / 3) + s.complexRight : 1 + Math.floor(s.right / 3);
-  }
-  function extraPaidLeft(day) {
-    const x = profile.extraPaid && profile.extraPaid.day === day ? profile.extraPaid.n : 0;
-    return Math.max(0, EXTRA_PAID - x);
+    const base = s.fresh.length ? 3 + Math.floor(s.right / 3) + s.complexRight : 1 + Math.floor(s.right / 3);
+    const surprise = Math.random() < EXTRA_SURPRISE;
+    return { coins: surprise ? base * 2 : base, surprise };
   }
 
   // ---------- Streak, coins & city ----------
@@ -1249,6 +1248,7 @@
     let coins = 0;
     let team = false;
     let milestone = null;
+    let surprise = false;
     let doubleDay = false;
     if (!session.bonus) {
       streakInfo = applyStreak(day);
@@ -1265,10 +1265,9 @@
       chest = rollChest();
       doubleDay = siblingPlayedToday(day);
       team = bumpWeekly(day);
-    } else if (extraPaidLeft(day) > 0) {
-      coins = extraCoins(session);
+    } else {
+      ({ coins, surprise } = extraCoins(session));
       profile.coins += coins;
-      profile.extraPaid = { day, n: EXTRA_PAID - extraPaidLeft(day) + 1 };
     }
     save();
     sfx.win();
@@ -1276,6 +1275,7 @@
     const pct = session.total ? Math.round((session.right / session.total) * 100) : 100;
     h(`
       <main class="screen center">
+        ${surprise ? `<div class="milestone pop">🎲 הפתעה! המטבעות כפולים</div>` : ''}
         ${milestone ? `<div class="milestone pop">🏆 ${milestone} ימים ברצף! +${MILESTONES[milestone]} 🪙</div>` : ''}
         <h1>${session.bonus ? (session.fresh.length ? `למדת עוד ${session.fresh.length} מילים!` : 'האימון הנוסף הושלם') : pct >= 80 ? 'משימה הושלמה!' : pct >= 50 ? 'יפה מאוד!' : 'עבודה טובה!'}</h1>
         <div class="summary card">
@@ -1555,7 +1555,6 @@
   function screenDone() {
     themeClass();
     const day = todayNum();
-    const paidLeft = extraPaidLeft(day);
     const others = Object.values(data.profiles).filter((p) => p.id !== profile.id);
     h(`
       <main class="screen center">
@@ -1565,11 +1564,9 @@
         ${others.map((p) => `<p class="note">${avatar(p.avatar)} ${esc(p.name)} ${p.lastSessionDay === day ? `כבר ${g(p, 'סיים', 'סיימה')} היום ✓` : `עוד לא ${g(p, 'שיחק', 'שיחקה')} היום. אולי תזכירו?`}</p>`).join('')}
         <section class="card done-card">
           <h3>בא לך עוד?</h3>
-          <p class="muted small">${paidLeft
-            ? `רק אם בא לך. מי שלומד יותר מרוויח יותר מטבעות! (עוד ${paidLeft} ${paidLeft === 1 ? 'אימון' : 'אימונים'} עם מטבעות היום)`
-            : 'היום כבר הרווחת מטבעות על כל האימונים הנוספים. אפשר להמשיך בשביל הגביעים 🏆'}</p>
-          <button class="btn primary big" id="extra-new">✨ 3 מילים חדשות${paidLeft ? ' · עד 🪙 6' : ''}</button>
-          <button class="btn ghost" id="extra">🔁 אימון על מילים שלמדתי${paidLeft ? ' · עד 🪙 3' : ''}</button>
+          <p class="muted small">רק אם בא לך. כל אימון נוסף מביא עוד מטבעות, ולפעמים יש הפתעה ומקבלים פי 2 🎲</p>
+          <button class="btn primary big" id="extra-new">✨ 3 מילים חדשות · 🪙</button>
+          <button class="btn ghost" id="extra">🔁 אימון על מילים שלמדתי · 🪙</button>
         </section>
         <button class="btn ghost" id="home">למסך הבית</button>
       </main>`);
