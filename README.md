@@ -39,3 +39,9 @@ python3 -m http.server 8000
 - מילה ידועה: 3 תשובות נכונות בניסיון ראשון (טעות מורידה רמה אחת).
 - אזור הורים: לחיצה ארוכה על גלגל השיניים. התקדמות, מהירות הקראה, הקלטות של ההורים (מילים, שאלות וחיזוקים, נשמרות ב-IndexedDB) וסנכרון.
 - סנכרון בין הטלפונים דרך אותו פרויקט Firebase ואותו קוד משפחה של עיר המילים: `families/{code}/data/little` להתקדמות, ו-`families/{code}/data/clip~{key}` לכל הקלטה. חוקי Firestore הקיימים מכסים את זה.
+
+## תזכורת יומית
+- במסך הבית, "🔔 תזכורת": הילד בוחר שעה (14:00 עד 20:00) ומאשר התראות. תזכורת אחת לכל טלפון, לשחקן שהפעיל אותה, ורק אם המשימה של היום עוד לא נעשתה.
+- הטלפון שומר את הבקשה ב-`families/{code}/data/push~{uid}`. כל שעה GitHub Actions מריץ את `.github/reminders/send.mjs` (`.github/workflows/reminders.yml`), ששולח דרך Firebase Cloud Messaging.
+- הפעלה חד-פעמית: מפתח Web Push ב-`firebase-config.js` (`FIREBASE_VAPID_KEY`), וסוד בשם `FIREBASE_SERVICE_ACCOUNT` בהגדרות הריפו (Settings ← Secrets and variables ← Actions) עם קובץ המפתח של חשבון השירות מ-Firebase. בלי המפתח הכפתור לא מופיע.
+- באייפון התראות עובדות רק כשהאפליקציה נוספה למסך הבית (iOS 16.4 ומעלה).

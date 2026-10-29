@@ -149,7 +149,7 @@ h3 { font-size: 17px; margin: 0 0 8px; }
 .stats-row div, .summary div { display: flex; flex-direction: column; gap: 2px; }
 .stats-row b, .summary b { font-size: 24px; }
 .stats-row span, .summary span { font-size: 13px; color: var(--muted); }
-.foot { display: flex; justify-content: space-between; margin-top: auto; }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; margin-top: auto; }
 
 /* Learn & quiz */
 .qbar { display: flex; align-items: center; gap: 12px; }
