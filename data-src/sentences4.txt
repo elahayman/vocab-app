@@ -419,3 +419,6 @@
 1702|He wants to ___ money from the bank.
 1703|Did anyone ___ the accident?
 1704|The farm will ___ a big crop this year.
+1705|The cat is chasing a little gray ___.
+1706|I eat a small ___ after school.
+1707|I brush my teeth ___ a day.

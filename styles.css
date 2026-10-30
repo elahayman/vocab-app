@@ -393,3 +393,7 @@ body.theme-clean .slot { color: var(--ink); }
 .slots:focus-within .slot.cur { border-bottom-color: var(--primary); animation: blink 1s steps(2) infinite; }
 .slots input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; border: 0; color: transparent; background: transparent; caret-color: transparent; }
 @keyframes blink { 50% { border-bottom-color: var(--line); } }
+.focus-edit { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.focus-edit h4 { margin: 0 0 6px; }
+.focus-edit textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; padding: 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--card, #fff); color: var(--ink); }
+.focus-edit label { display: flex; gap: 8px; align-items: center; margin: 8px 0; }

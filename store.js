@@ -157,19 +157,26 @@
       }
       for (const id of Object.keys(dirty.profiles)) {
         const p = d.profiles && d.profiles[id];
-        if (p) await fam().collection('profiles').doc(id).set({ json: JSON.stringify(p), updatedAt: Date.now() });
+        // Cleared before the upload, so a save made while it is on its way marks it again.
         delete dirty.profiles[id];
+        try {
+          if (p) await fam().collection('profiles').doc(id).set({ json: JSON.stringify(p), updatedAt: Date.now() });
+        } catch (e) { dirty.profiles[id] = true; throw e; }
       }
       if (dirty.shared && d.shared) {
         const ref = fam().collection('data').doc('shared');
-        const merged = await db.runTransaction(async (tx) => {
-          const snap = await tx.get(ref);
-          const m = mergeShared(snap.exists ? JSON.parse(snap.data().json) : null, read().shared);
-          tx.set(ref, { json: JSON.stringify(m), updatedAt: Date.now() });
-          return m;
-        });
         dirty.shared = false;
+        let merged;
+        try {
+          merged = await db.runTransaction(async (tx) => {
+            const snap = await tx.get(ref);
+            const m = mergeShared(snap.exists ? JSON.parse(snap.data().json) : null, read().shared);
+            tx.set(ref, { json: JSON.stringify(m), updatedAt: Date.now() });
+            return m;
+          });
+        } catch (e) { dirty.shared = true; throw e; }
         remoteShared = merged;
+        if (dirty.shared) again = true; // changed again meanwhile: send that too
         emit();
       }
       saveDirty();
