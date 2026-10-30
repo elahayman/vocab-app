@@ -16,7 +16,7 @@ const sgn = n => (n < 0 ? '−' : '+');
 const nz = (a, b) => { let n; do { n = R.int(a, b); } while (!n); return n; };
 
 const subs = [
-  { id: 'formulas', name: 'נוסחאות הכפל המקוצר', tip: '(a + b)² = a² + 2ab + b²   (a − b)² = a² − 2ab + b²   (a + b)(a − b) = a² − b²' },
+  { id: 'formulas', name: 'נוסחאות הכפל המקוצר', tip: 'שלוש הנוסחאות: ' + M('(a + b)² = a² + 2ab + b²') + ', ' + M('(a − b)² = a² − 2ab + b²') + ', ' + M('(a + b)(a − b) = a² − b²') },
   { id: 'factor', name: 'פירוק לגורמים', tip: 'קודם גורם משותף. אחר כך: הפרש ריבועים? ריבוע של סכום/הפרש? טרינום: שני מספרים שמכפלתם c וסכומם b.' },
   { id: 'equations', name: 'פתרון משוואות בעזרת פירוק', tip: 'מכפלה שווה 0 רק כשאחד הגורמים שווה 0.' },
 ];
@@ -47,11 +47,13 @@ const rules = {
 };
 
 const T = [];
-const add = (id, sub, make) => T.push({ id: 'a-' + id, sub, make });
+const add = (id, sub, make, lvl = 1) => T.push({ id: 'a-' + id, sub, make, lvl });
+// Coefficient of x for the subtopic's level: 1 at level 1, sometimes 2 or 3 later.
+const coef = lv => (lv >= 2 && R.coin() ? R.pick([2, 3]) : 1);
 
 // ---------- formulas (expanding) ----------
-add('sum-sq', 'formulas', () => {
-  const p = R.pick([1, 1, 1, 2, 3]), q = R.int(1, 9), minus = R.coin(), s = minus ? -1 : 1;
+add('sum-sq', 'formulas', lv => {
+  const p = coef(lv), q = R.int(1, 9), minus = R.coin(), s = minus ? -1 : 1;
   const ok = Q(p * p, s * 2 * p * q, q * q);
   return {
     q: `מה שווה ${M(sq(p, s * q))}?`,
@@ -63,8 +65,8 @@ add('sum-sq', 'formulas', () => {
   };
 });
 
-add('diff-sq', 'formulas', () => {
-  const p = R.pick([1, 1, 2, 3]), q = R.int(1, 9);
+add('diff-sq', 'formulas', lv => {
+  const p = coef(lv), q = R.int(1, 9);
   const ok = Q(p * p, 0, -q * q);
   return {
     q: `מה שווה ${M(`(${L(p, q)})(${L(p, -q)})`)}?`,
@@ -159,9 +161,9 @@ add('common', 'factor', () => {
   };
 });
 
-add('fac-ds', 'factor', () => {
+add('fac-ds', 'factor', lv => {
   let p, q;
-  do { p = R.pick([1, 1, 2, 3]); q = R.int(1, 9); } while (gcd(p, q) !== 1);
+  do { p = coef(lv); q = R.int(1, 9); } while (gcd(p, q) !== 1);
   return {
     q: `מה הפירוק של ${M(Q(p * p, 0, -q * q))}?`,
     opts: choices(M(`(${L(p, -q)})(${L(p, q)})`), [M(sq(p, -q)), M(sq(p, q)), M(`(${L(p, -q * q)})(${L(p, 1)})`), M(`${p * p}(${L(1, -q)})(${L(1, q)})`)]),
@@ -181,9 +183,9 @@ add('fac-square', 'factor', () => {
   };
 });
 
-add('trinomial', 'factor', () => {
+add('trinomial', 'factor', lv => {
   let m, n;
-  do { m = nz(-7, 7); n = nz(-7, 7); } while (m === n || m === -n);
+  do { m = lv >= 2 ? nz(-7, 7) : R.int(1, 7); n = lv >= 2 ? nz(-7, 7) : R.int(1, 7); } while (m === n || m === -n);
   const e = Q(1, m + n, m * n), f = (a, b) => `(${L(1, a)})(${L(1, b)})`;
   return {
     q: `מה הפירוק של ${M(e)}?`,
@@ -294,6 +296,137 @@ add('eq-why', 'equations', () => ({
   rule: 'מכפלה = 0 → אחד הגורמים = 0',
   explain: 'אם מכפילים שני מספרים ומקבלים 0, <b>לפחות אחד מהם 0</b>. בגלל זה מפרקים לגורמים לפני שפותרים.',
 }));
+
+
+// ---------- true or false ----------
+const TF = {
+  formulas: [
+    [1, '(a + b)² = a² + b²', false, 'חסר האיבר האמצעי: (a + b)² = a² + <b>2ab</b> + b². למשל (1 + 2)² = 9, אבל 1² + 2² = 5.'],
+    [1, '(x − 3)(x + 3) = x² − 9', true, 'נכון: הפרש ריבועים.'],
+    [2, '(x − 4)² = x² − 16', false, '(x − 4)² = x² − 8x + 16. התוצאה x² − 16 שייכת ל-(x − 4)(x + 4).'],
+    [2, '(2x + 1)² = 4x² + 4x + 1', true, '(2x)² + 2 · 2x · 1 + 1² = 4x² + 4x + 1.'],
+    [3, '(a − b)² = (b − a)²', true, 'נכון: b − a הוא המספר הנגדי ל-a − b, ובריבוע הסימן נעלם.'],
+    [3, '(−x − 2)² = (x + 2)²', true, 'נכון: −x − 2 = −(x + 2), ובריבוע המינוס נעלם.'],
+    [3, '(a + b)(a − b) = (a − b)²', false, 'השמאלי a² − b², הימני a² − 2ab + b². שונים (אלא אם b = 0).'],
+  ],
+  factor: [
+    [1, 'x² − 49 = (x − 7)(x + 7)', true, 'נכון: הפרש ריבועים.'],
+    [1, 'x² + 9 אפשר לפרק לפי נוסחת הפרש ריבועים.', false, 'יש פלוס בין הריבועים. הפרש ריבועים צריך <b>מינוס</b>.'],
+    [2, '4x² − 1 = (2x − 1)(2x + 1)', true, '4x² = (2x)², ו-1 = 1². הפרש ריבועים.'],
+    [2, 'x² + 6x + 9 = (x + 3)²', true, 'האיבר האמצעי 6x = 2 · x · 3. נכון.'],
+    [3, 'x² + 5x + 9 = (x + 3)²', false, '(x + 3)² = x² + 6x + 9. האיבר האמצעי חייב להיות 2 · 3 · x = 6x.'],
+    [3, '2x² − 8 = 2(x − 2)(x + 2)', true, 'גורם משותף 2: 2(x² − 4), ואז הפרש ריבועים.'],
+  ],
+  equations: [
+    [1, 'אם (x − 2)(x − 5) = 0, אז x = 2 או x = 5.', true, 'נכון: מכפלה שווה 0 כשאחד הגורמים 0.'],
+    [2, 'למשוואה x² = 16 יש פתרון אחד בלבד: x = 4.', false, 'גם (−4)² = 16. הפתרונות: x = 4 או x = −4.'],
+    [3, 'מותר לחלק את שני האגפים של x² = 3x ב-x.', false, 'אם מחלקים ב-x מאבדים את הפתרון x = 0. נכון לפרק: x(x − 3) = 0.'],
+    [3, 'למשוואה x² + 4 = 0 אין פתרון.', true, 'x² תמיד 0 או חיובי, ולכן x² + 4 לפחות 4.'],
+  ],
+};
+Object.keys(TF).forEach(sub => add('tf-' + sub, sub, (lv = 1) => {
+  const pool = TF[sub].filter(x => x[0] <= lv), top = pool.filter(x => x[0] === lv);
+  const [, text, truth, why] = R.pick(top.length && R.coin() ? top : pool);
+  return {
+    q: `נכון או לא נכון? <br>${/[א-ת]/.test(text) ? `<b>${text}</b>` : M(text)}`, tf: true,
+    opts: truth ? ['נכון ✔️', 'לא נכון ✖️'] : ['לא נכון ✖️', 'נכון ✔️'],
+    rule: truth ? 'הטענה נכונה' : 'הטענה לא נכונה',
+    explain: why,
+  };
+}));
+
+// ---------- level 2-3 ----------
+add('error', 'factor', () => {
+  const q = R.int(2, 9);
+  const cases = [
+    [`(x + ${q})² = x² + ${q * q}`, `חסר האיבר האמצעי ${M(2 * q + 'x')}`, [`צריך להיות ${M(`x² − ${q * q}`)}`, `צריך להיות ${M(`2x + ${2 * q}`)}`, 'אין טעות'], `${M(`(x + ${q})² = x² + ${2 * q}x + ${q * q}`)}. אסור לשכוח את 2ab.`],
+    [`x² − ${q * q} = (x − ${q})²`, `צריך להיות ${M(`(x − ${q})(x + ${q})`)}`, [`צריך להיות ${M(`(x − ${q * q})²`)}`, `צריך להיות ${M(`(x + ${q})²`)}`, 'אין טעות'], `${M(`(x − ${q})² = x² − ${2 * q}x + ${q * q}`)}, יש לו איבר אמצעי. הפרש ריבועים מתפרק ל-${M(`(x − ${q})(x + ${q})`)}.`],
+    [`x² + ${q * q} = (x − ${q})(x + ${q})`, `${M(`(x − ${q})(x + ${q})`)} שווה ל-${M(`x² − ${q * q}`)}, לא ל-${M(`x² + ${q * q}`)}`, [`צריך להיות ${M(`(x + ${q})²`)}`, `צריך להיות ${M(`(x + ${q * q})(x − 1)`)}`, 'אין טעות'], `הנוסחה (a − b)(a + b) נותנת a² <b>מינוס</b> b². סכום ריבועים לא מתפרק כך.`],
+    [`x² − ${q}x = 0 ⇒ x = ${q}`, `שכחו את הפתרון ${M('x = 0')}`, [`צריך להיות ${M(`x = −${q}`)}`, `צריך להיות ${M(`x = ${q * q}`)}`, 'אין טעות'], `${M(`x² − ${q}x = x(x − ${q}) = 0`)}, לכן x = 0 <b>או</b> x = ${q}. מי שמחלק ב-x מאבד את x = 0.`],
+  ];
+  const [expr, ok, wrong, why] = R.pick(cases);
+  return {
+    q: `דני כתב: ${M(expr)}. מה הטעות?`,
+    opts: choices(ok, wrong),
+    rule: 'למצוא את הטעות',
+    explain: why,
+  };
+}, 2);
+
+add('order-factor', 'factor', () => {
+  const k = R.int(2, 5), q = R.int(2, 6);
+  return {
+    q: `סדר את השלבים של הפירוק המלא של ${M(Q(k, 0, -k * q * q))}.`,
+    steps: [
+      `גורם משותף: ${M(`${k}(x² − ${q * q})`)}`,
+      `לזהות הפרש ריבועים: ${M(`x² − ${q * q} = x² − ${q}²`)}`,
+      `לפרק: ${M(`${k}(x − ${q})(x + ${q})`)}`,
+      `לבדוק: לפתוח סוגריים ולקבל ${M(Q(k, 0, -k * q * q))}`,
+    ],
+    rule: 'קודם גורם משותף, אחר כך נוסחה, ובסוף בדיקה',
+    explain: 'תמיד מתחילים מגורם משותף, כי הוא מקטין את המספרים ומגלה את הנוסחה. בסוף בודקים בפתיחת סוגריים.',
+  };
+}, 3);
+
+add('trinomial-k', 'factor', () => {
+  let m, n;
+  do { m = nz(-5, 5); n = nz(-5, 5); } while (m === n || m === -n);
+  const k = R.pick([2, 3]), e = Q(k, k * (m + n), k * m * n), f = (a, b) => `${k}(${L(1, a)})(${L(1, b)})`;
+  return {
+    q: `מה הפירוק המלא של ${M(e)}?`,
+    opts: choices(M(f(m, n)), [M(f(-m, -n)), M(`(${L(k, m)})(${L(1, n)})`), M(f(m * k, n))]),
+    rule: 'גורם משותף ואז טרינום',
+    hint: `קודם הוצא ${k}.`,
+    explain: `${e} = ${k}(${Q(1, m + n, m * n)}). עכשיו שני מספרים שמכפלתם ${m * n} וסכומם ${m + n}: ${m} ו-${n}.`,
+  };
+}, 3);
+
+add('equiv', 'formulas', () => {
+  const q = R.int(2, 9);
+  return {
+    q: `איזה ביטוי שווה ל-${M(`(x − ${q})²`)} לכל x?`,
+    opts: choices(M(`(${q} − x)²`), [M(`x² − ${q * q}`), M(`(x + ${q})²`), M(`x² + ${q * q}`)]),
+    rule: '(a − b)² = (b − a)²',
+    explain: `${q} − x = −(x − ${q}), ובריבוע המינוס נעלם. שני הביטויים שווים ל-${Q(1, -2 * q, q * q)}.`,
+  };
+}, 3);
+
+add('find-b', 'formulas', () => {
+  const q = R.int(2, 9), s = R.coin() ? 1 : -1;
+  return {
+    q: `${M(`x² + b·x + ${q * q} = (x ${sgn(s)} ${q})²`)}. כמה זה b?`,
+    opts: choices(M(String(s * 2 * q).replace('-', '−')), [M(String(s * q).replace('-', '−')), M(String(-s * 2 * q).replace('-', '−')), M(String(q * q))]),
+    rule: 'האיבר האמצעי: ±2ab',
+    explain: `(x ${sgn(s)} ${q})² = x² ${sgn(s)} ${2 * q}x + ${q * q}, לכן b = ${String(s * 2 * q).replace('-', '−')}.`,
+  };
+}, 2);
+
+add('eq-coef', 'equations', () => {
+  const a = R.int(2, 5), r = R.int(1, 6) * (R.coin() ? 1 : -1), n = nz(-6, 6);
+  const e = `(${L(a, -a * r)})(${L(1, n)}) = 0`, s = (x, y) => `x = ${x} או x = ${y}`.replace(/-/g, '−');
+  return {
+    q: `מה הפתרונות של ${M(e)}?`,
+    opts: choices(M(s(r, -n)), [M(s(a * r, -n)), M(s(-r, n)), M(s(r, n))]),
+    rule: 'מכפלה = 0 → אחד הגורמים = 0',
+    explain: `${L(a, -a * r)} = 0 → x = ${r}. ${L(1, n)} = 0 → x = ${-n}.`.replace(/(= |x = )-/g, '$1−'),
+  };
+}, 2);
+
+add('eq-order', 'equations', () => {
+  let m, n;
+  do { m = nz(-6, 6); n = nz(-6, 6); } while (m === n || m === -n);
+  const e = Q(1, -(m + n), m * n);
+  return {
+    q: `סדר את השלבים לפתרון ${M(e + ' = 0')}.`,
+    steps: [
+      `לפרק: ${M(`(${L(1, -m)})(${L(1, -n)}) = 0`)}`,
+      `מכפלה = 0: ${M(`${L(1, -m)} = 0`)} או ${M(`${L(1, -n)} = 0`)}`,
+      `${M(`x = ${m}`.replace('-', '−'))} או ${M(`x = ${n}`.replace('-', '−'))}`,
+    ],
+    rule: 'לפרק, להשוות כל גורם ל-0, לפתור',
+    explain: `שני מספרים שמכפלתם ${m * n} וסכומם ${-(m + n)}: ${-m} ו-${-n}. ואז כל גורם שווה 0.`.replace(/-(\d)/g, '−$1'),
+  };
+}, 3);
 
 TOPICS.push({
   id: 'algebra', title: 'פירוק לגורמים ונוסחאות הכפל המקוצר', icon: '🧮', added: '2026-10-30',

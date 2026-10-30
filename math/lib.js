@@ -1,7 +1,11 @@
 // Shared helpers for writing questions: math formatting, randomness and SVG figures.
 // A topic file pushes { id, title, icon, added, subs, rules, templates } onto window.TOPICS.
-// A template is { id, sub, make() } and make() returns
-//   { q, fig?, opts: [correct, wrong, wrong, wrong], explain, rule?, hint? }  (HTML strings).
+// A template is { id, sub, lvl?, make(level) }. lvl (1-3, default 1) is the difficulty level of the subtopic
+// at which the template starts to appear; make() gets the subtopic's current level and returns one of:
+//   multiple choice / true-false: { q, fig?, opts: [correct, ...wrong] (2-4), explain, rule?, hint? }
+//   tap on the figure:            { q, fig (with D.hitSeg / D.hitAng targets), tap: key of the right target, explain, ... }
+//   put steps in order:           { q, steps: [step 1, step 2, ...] in the right order, explain, ... }
+// All strings are HTML.
 window.TOPICS = window.TOPICS || [];
 
 // Inline math, kept left-to-right inside the Hebrew text.
@@ -83,6 +87,12 @@ const D = (() => {
     const ua = unit(sub(a, v)), ub = unit(sub(b, v));
     return `<polyline points="${pt(add(v, ua, k))} ${pt(add(add(v, ua, k), ub, k))} ${pt(add(v, ub, k))}" class="mark"/>`;
   };
+  // Invisible, finger-sized tap targets for "tap on the figure" questions. Add them last so they sit on top.
+  const hitSeg = (a, b, k) => `<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" class="hit" data-k="${k}"/>`;
+  const hitAng = (v, a, b, k, d = 24) => {
+    const p = add(v, unit(add(unit(sub(a, v)), unit(sub(b, v)))), d);
+    return `<circle cx="${f(p[0])}" cy="${f(p[1])}" r="17" class="hit spot" data-k="${k}"/>`;
+  };
   const dot = p => `<circle cx="${f(p[0])}" cy="${f(p[1])}" r="3" class="dot"/>`;
-  return { svg, seg, poly, txt, name, side, ticks, par, ang, rt, dot, mid, cen, polar, add, sub, unit };
+  return { svg, hitSeg, hitAng, seg, poly, txt, name, side, ticks, par, ang, rt, dot, mid, cen, polar, add, sub, unit };
 })();

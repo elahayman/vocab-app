@@ -3,6 +3,7 @@
 const ROUND = 8;
 const BOX_DAYS = [0, 1, 2, 4, 8, 16, 32]; // Leitner box → days until the question comes back
 const MASTER_BOX = 3;
+const MAX_LEVEL = 3;
 const KEY = 'math-lab-v1';
 const $ = s => document.querySelector(s);
 const app = $('#app');
@@ -14,6 +15,7 @@ const fresh = () => ({
   subs: {},      // 'topic:sub' → { ok, bad }
   recent: [],    // last mistakes: { r: rule, d: day key }
   stars: 0, rounds: 0, perfects: 0, fixes: 0, bestCombo: 0,
+  lv: {}, hist: {}, // difficulty level per subtopic, and its recent first-try results
   trophies: {}, shields: 0, frozen: {}, mute: false,
 });
 let S;
@@ -55,10 +57,12 @@ const topicById = id => TOPICS.find(t => t.id === id);
 const newest = () => TOPICS.reduce((m, t) => (t.added > m ? t.added : m), '');
 const isNew = t => dayNum(today()) - dayNum(t.added) <= 10;
 const subKey = (tp, sub) => tp.id + ':' + sub;
+const subLevel = (tp, sub) => S.lv[subKey(tp, sub)] || 1;
 const allTemplates = () => TOPICS.flatMap(tp => tp.templates.map(t => ({ t, tp })));
 
 function subStats(tp, sub) {
-  const list = tp.templates.filter(t => t.sub === sub.id);
+  const lvl = subLevel(tp, sub.id);
+  const list = tp.templates.filter(t => t.sub === sub.id && (t.lvl || 1) <= lvl);
   const mastered = list.filter(t => (S.qs[t.id] || {}).b >= MASTER_BOX).length;
   const seen = list.filter(t => S.qs[t.id]).length;
   const r = S.subs[subKey(tp, sub.id)] || { ok: 0, bad: 0 };
@@ -66,7 +70,7 @@ function subStats(tp, sub) {
   let level = n ? 'mid' : 'new';
   if (n >= 3) level = acc >= 0.8 && mastered / list.length >= 0.5 ? 'good' : acc < 0.6 ? 'weak' : 'mid';
   if (n >= 3 && mastered === list.length) level = 'good';
-  return { total: list.length, mastered, seen, n, acc, level };
+  return { total: list.length, mastered, seen, n, acc, level, lvl };
 }
 const topicProgress = tp => {
   const m = tp.templates.filter(t => (S.qs[t.id] || {}).b >= MASTER_BOX).length;
@@ -81,12 +85,14 @@ function pickRound(mode) {
     const w = new Set(weakSubs().slice(0, 3).map(x => subKey(x.tp, x.s.id)));
     pool = pool.filter(x => w.has(subKey(x.tp, x.t.sub)));
   } else if (mode !== 'all') pool = pool.filter(x => x.tp.id === mode);
+  pool = pool.filter(x => (x.t.lvl || 1) <= subLevel(x.tp, x.t.sub));
   const now = dayNum(today());
   // Weighted random order (bigger weight = earlier): due and weak questions first, then new ones.
   // In the mixed mode, mastered questions come back a little more often as reminders.
   const keyed = pool.map(x => {
     const r = S.qs[x.t.id];
-    const w = !r ? 4 : r.due <= now ? 8 - Math.min(r.b, 6) : (mode === 'all' ? 1.2 : 0.4);
+    let w = !r ? 4 : r.due <= now ? 8 - Math.min(r.b, 6) : (mode === 'all' ? 1.2 : 0.4);
+    if ((x.t.lvl || 1) > 1 && x.t.lvl === subLevel(x.tp, x.t.sub)) w *= 1.6; // fresh challenge at a new level
     return { x, k: Math.random() ** (1 / w) };
   }).sort((a, b) => b.k - a.k);
   const out = [], perSub = {};
@@ -103,12 +109,13 @@ function pickRound(mode) {
 }
 
 // Builds one question; tries again if the random numbers produced duplicate answers.
-function build(t) {
+function build(t, lvl) {
+  const fine = q => q.tap || q.steps || (q.opts.length >= 2 && new Set(q.opts).size === q.opts.length && (q.opts.length === 4 || q.tf));
   for (let i = 0; i < 20; i++) {
-    const q = t.make();
-    if (q.opts.length === 4 && new Set(q.opts).size === 4) return q;
+    const q = t.make(lvl);
+    if (fine(q)) return q;
   }
-  return t.make();
+  return t.make(lvl);
 }
 
 // ---------- sound and fun ----------
@@ -176,6 +183,8 @@ const TROPHIES = [
   ['quads', '🔷', 'מלך המרובעים', 'לשלוט במרובעים', () => subMastered('geometry', 'quads')],
   ['formulas', '🧮', 'נוסחאות בדם', 'לשלוט בנוסחאות הכפל המקוצר', () => subMastered('algebra', 'formulas')],
   ['factor', '🛠️', 'מפרק מקצועי', 'לשלוט בפירוק לגורמים', () => subMastered('algebra', 'factor')],
+  ['lvl2', '📈', 'עולה שלב', 'להגיע לרמה 2 בתת-נושא כלשהו', () => Object.values(S.lv).some(v => v >= 2)],
+  ['lvl3', '🚀', 'מקצוען', 'להגיע לרמה 3 בתת-נושא כלשהו', () => Object.values(S.lv).some(v => v >= 3)],
   ['geo', '🏛️', 'גאומטריקן', 'לשלוט בכל נושאי הגאומטריה', () => topicById('geometry').subs.every(s => subMastered('geometry', s.id))],
 ];
 function checkTrophies() {
@@ -212,7 +221,7 @@ function home() {
       <div class="flame">${st ? `🔥<span>${st}</span>` : "💤"}</div>
       <div class="streak-text">
         <b>${st ? `${st} ${st === 1 ? 'יום' : 'ימים'} ברצף` : 'מתחילים רצף חדש'}</b>
-        <span>${todayDone ? 'המשימה של היום בוצעה ✅' : 'המשימה של היום: סבב אחד, 8 שאלות'}</span>
+        <span>${todayDone ? 'המשימה של היום בוצעה ✅ אפשר להמשיך להתאמן כמה שרוצים' : 'המשימה של היום: סבב אחד, 8 שאלות'}</span>
         ${S.shields ? `<span class="shield">🛡️ × ${S.shields} מגן רצף</span>` : ''}
         ${used ? `<span class="shield">מגן רצף שמר על הרצף שלך 🛡️</span>` : ''}
       </div>
@@ -252,36 +261,100 @@ let Q = null;
 function startRound(mode) {
   const items = pickRound(mode);
   if (!items.length) return home();
-  Q = { mode, items: items.map(x => ({ ...x, retry: false })), i: 0, combo: 0, maxCombo: 0, firstOk: 0, firstN: 0, earned: 0, seen: new Set() };
+  Q = { mode, items: items.map(x => ({ ...x, retry: false })), i: 0, combo: 0, maxCombo: 0, firstOk: 0, firstN: 0, earned: 0, ups: [] };
   ask();
 }
 
 function ask() {
   const it = Q.items[Q.i];
-  const q = build(it.t), order = R.shuffle([0, 1, 2, 3]);
-  Q.cur = { q, order, hinted: false, answered: false };
+  const lvl = subLevel(it.tp, it.t.sub);
+  const q = build(it.t, lvl);
+  const kind = q.tap ? 'tap' : q.steps ? 'order' : 'mc';
+  Q.cur = { q, kind, hinted: false, answered: false, picked: [] };
   const total = Q.items.length;
+  let body = '';
+  if (kind === 'mc') {
+    const order = R.shuffle(q.opts.map((_, i) => i));
+    body = `${q.fig ? `<div class="figbox">${q.fig}</div>` : ''}
+      <div class="opts ${q.opts.length === 2 ? 'two' : ''}">${order.map(i => `<button class="opt" data-i="${i}">${q.opts[i]}</button>`).join('')}</div>`;
+  } else if (kind === 'tap') {
+    body = `<div class="figbox tapfig">${q.fig}</div><p class="how">👆 גע בשרטוט</p>`;
+  } else {
+    const order = R.shuffle(q.steps.map((_, i) => i));
+    body = `<p class="how">👆 גע בשלבים לפי הסדר הנכון</p>
+      <ol class="picked" id="picked"></ol>
+      <div class="opts steps">${order.map(i => `<button class="opt step" data-i="${i}">${q.steps[i]}</button>`).join('')}</div>
+      <button class="hint" id="undo" hidden>↺ להתחיל מחדש</button>`;
+  }
   app.innerHTML = `
     <header class="qtop">
       <button class="chip" id="quit" aria-label="יציאה">✕</button>
       <div class="bar prog"><i style="width:${100 * Q.i / total}%"></i></div>
       <span class="combo ${Q.combo >= 3 ? 'hot' : ''}">${Q.combo >= 2 ? '⚡' + Q.combo : ''}</span>
     </header>
-    <div class="tag">${it.tp.icon} ${it.tp.subs.find(s => s.id === it.t.sub).name}${it.retry ? ' · <b>עוד ניסיון</b>' : ''}</div>
+    <div class="tag">${it.tp.icon} ${it.tp.subs.find(s => s.id === it.t.sub).name} · רמה ${lvl}${it.retry ? ' · <b>עוד ניסיון</b>' : ''}</div>
     <h2 class="question">${q.q}</h2>
-    ${q.fig ? `<div class="figbox">${q.fig}</div>` : ''}
-    <div class="opts">${order.map(i => `<button class="opt" data-i="${i}">${q.opts[i]}</button>`).join('')}</div>
+    ${body}
     <div class="under"><button class="hint" id="hint">💡 רמז</button></div>
     <div id="fb"></div>`;
-  app.querySelectorAll('.opt').forEach(b => b.onclick = () => answer(+b.dataset.i, b));
+  if (kind === 'mc') app.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+    const ok = +b.dataset.i === 0;
+    app.querySelectorAll('.opt').forEach(x => { x.disabled = true; if (+x.dataset.i === 0) x.classList.add('right'); });
+    if (!ok) b.classList.add('wrong');
+    answer(ok, b);
+  });
+  if (kind === 'tap') app.querySelectorAll('.hit').forEach(h => h.onclick = () => {
+    if (Q.cur.answered) return;
+    const ok = h.dataset.k === q.tap;
+    app.querySelectorAll('.hit').forEach(x => { if (x.dataset.k === q.tap) x.classList.add('right'); });
+    if (!ok) h.classList.add('wrong');
+    answer(ok, app.querySelector('.figbox'));
+  });
+  if (kind === 'order') {
+    const picked = $('#picked'), undo = $('#undo');
+    app.querySelectorAll('.step').forEach(b => b.onclick = () => {
+      if (Q.cur.answered) return;
+      Q.cur.picked.push(+b.dataset.i);
+      b.disabled = true; b.classList.add('used');
+      picked.insertAdjacentHTML('beforeend', `<li>${q.steps[+b.dataset.i]}</li>`);
+      undo.hidden = false;
+      if (Q.cur.picked.length === q.steps.length) {
+        // Steps in the same group (q.groups) may come in either order.
+        const grp = q.groups || q.steps.map((_, i) => i);
+        const ok = Q.cur.picked.every((x, i) => i === 0 || grp[x] >= grp[Q.cur.picked[i - 1]]);
+        undo.hidden = true;
+        app.querySelector('.steps').hidden = true;
+        picked.classList.add(ok ? 'right' : 'wrong');
+        if (!ok) picked.insertAdjacentHTML('afterend', `<div class="correct-order"><b>הסדר הנכון:</b><ol>${q.steps.map(x => `<li>${x}</li>`).join('')}</ol></div>`);
+        answer(ok, picked);
+      }
+    });
+    undo.onclick = () => {
+      Q.cur.picked = []; picked.innerHTML = ''; undo.hidden = true;
+      app.querySelectorAll('.step').forEach(b => { b.disabled = false; b.classList.remove('used'); });
+    };
+  }
   $('#hint').onclick = () => {
     if (Q.cur.answered) return;
     Q.cur.hinted = true;
     const sub = it.tp.subs.find(s => s.id === it.t.sub);
-    $('#hint').outerHTML = `<div class="hintbox">💡 ${q.hint || sub.tip}</div>`;
+    const tip = q.hint || sub.tip;
+    $('#hint').outerHTML = `<div class="hintbox">💡 ${/[א-ת]/.test(tip) ? tip : M(tip)}</div>`;
   };
   $('#quit').onclick = () => { if (confirm('לצאת מהסבב? ההתקדמות בסבב הזה לא תיחשב למשימה היומית.')) home(); };
   window.scrollTo(0, 0);
+}
+
+// A subtopic moves up a level (up to 3) after 7 of its last 8 first-try answers were right without a hint.
+function levelCheck(it, good) {
+  const sk = subKey(it.tp, it.t.sub), lvl = S.lv[sk] || 1;
+  const h = (S.hist[sk] || []).concat(good ? 1 : 0).slice(-8);
+  S.hist[sk] = h;
+  if (lvl < MAX_LEVEL && h.length >= 8 && h.reduce((a, b) => a + b, 0) >= 7) {
+    S.lv[sk] = lvl + 1; S.hist[sk] = [];
+    return { name: it.tp.subs.find(s => s.id === it.t.sub).name, lvl: lvl + 1 };
+  }
+  return null;
 }
 
 function record(it, ok) {
@@ -298,17 +371,16 @@ function record(it, ok) {
   d.q++; if (ok) d.ok++;
   S.days[today()] = d;
   if (!ok) { S.recent.unshift({ r: Q.cur.q.rule || '', s: sk, d: today() }); S.recent = S.recent.slice(0, 15); }
+  return levelCheck(it, ok && !Q.cur.hinted);
 }
 
-function answer(i, btn) {
+function answer(ok, el) {
   if (Q.cur.answered) return;
   Q.cur.answered = true;
-  const it = Q.items[Q.i], q = Q.cur.q, ok = i === 0;
-  app.querySelectorAll('.opt').forEach(b => { b.disabled = true; if (+b.dataset.i === 0) b.classList.add('right'); });
-  if (!ok) btn.classList.add('wrong');
-  let gain = 0;
+  const it = Q.items[Q.i], q = Q.cur.q;
+  let gain = 0, up = null;
   if (!it.retry) {
-    record(it, ok);
+    up = record(it, ok);
     Q.firstN++;
     if (ok) Q.firstOk++;
   } else if (ok) S.fixes++;
@@ -322,24 +394,28 @@ function answer(i, btn) {
     Snd.bad();
     if (navigator.vibrate) navigator.vibrate(60);
   }
+  if (up) { gain += 5; Q.ups.push(up); }
   S.stars += gain; Q.earned += gain;
   save();
+  const rule = q.rule && (/[א-ת]/.test(q.rule) ? q.rule : M(q.rule));
   const praise = R.pick(['נכון!', 'מעולה!', 'בדיוק!', 'יפה מאוד!', 'צדקת!']);
-  $('#fb').innerHTML = ok ? `
+  const upBox = up ? `<div class="levelup">⬆️ <b>עלית לרמה ${up.lvl} ב${up.name}!</b><small>מעכשיו יופיעו שם שאלות קצת יותר מאתגרות. +5 ⭐</small></div>` : '';
+  $('#fb').innerHTML = upBox + (ok ? `
     <div class="fb ok">
-      <div class="fbhead"><b>✅ ${praise}</b>${gain ? `<span class="gain">+${gain} ⭐${gain > 1 ? ' בונוס רצף!' : ''}</span>` : ''}</div>
-      ${q.rule ? `<div class="rule">${q.rule}</div>` : ''}
+      <div class="fbhead"><b>✅ ${praise}</b>${gain ? `<span class="gain">+${gain} ⭐${gain > 1 && !up ? ' בונוס רצף!' : ''}</span>` : ''}</div>
+      ${rule ? `<div class="rule">${rule}</div>` : ''}
       <details><summary>למה?</summary><p>${q.explain}</p></details>
       <button class="next" id="next">הבא ←</button>
     </div>` : `
     <div class="fb bad">
       <div class="fbhead"><b>לא הפעם. הנה ההסבר:</b></div>
       <p>${q.explain}</p>
-      ${q.rule ? `<div class="rule">📌 ${q.rule}</div>` : ''}
-      ${it.retry ? '' : '<small>השאלה תחזור עוד פעם בסוף הסבב.</small>'}
+      ${rule ? `<div class="rule">📌 ${rule}</div>` : ''}
+      ${it.retry ? '' : '<small>שאלה דומה תחזור בסוף הסבב.</small>'}
       <button class="next" id="next">הבנתי ←</button>
-    </div>`;
-  if (ok && gain) { const s = document.createElement('span'); s.className = 'fly'; s.textContent = '⭐'; btn.appendChild(s); }
+    </div>`);
+  if (up) { Snd.win(); burst(['⬆️', '⭐', '✨'], 18); }
+  if (ok && gain && el) { const s = document.createElement('span'); s.className = 'fly'; s.textContent = '⭐'; el.style.position = 'relative'; el.appendChild(s); }
   $('#next').onclick = () => { Q.i++; Q.i < Q.items.length ? ask() : finish(); };
   setTimeout(() => $('#fb').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
 }
@@ -369,9 +445,11 @@ function finish() {
       <p class="score">${Q.firstOk} מתוך ${Q.firstN} נכונות מהפעם הראשונה</p>
       <div class="earn">+${Q.earned} ⭐</div>
       ${firstToday ? `<div class="card streak done end-streak"><div class="flame pop">🔥<span>${st}</span></div><div class="streak-text"><b>${st} ${st === 1 ? 'יום' : 'ימים'} ברצף!</b><span>המשימה של היום בוצעה. +3 ⭐ על היום</span>${shieldMsg ? `<span class="shield">${shieldMsg}</span>` : ''}</div></div>` : ''}
+      ${Q.ups.map(u => `<div class="newtrophy up"><span>⬆️</span><div><small>עלית רמה!</small><b>${u.name}: רמה ${u.lvl}</b></div></div>`).join('')}
       ${got.map(x => `<div class="newtrophy"><span>${x.ic}</span><div><small>גביע חדש!</small><b>${x.name}</b></div></div>`).join('')}
       <div class="endbtns">
-        <button class="next" id="again">עוד סבב</button>
+        <button class="next" id="again">עוד סבב ⭐</button>
+        <p class="more">אפשר להמשיך להתאמן כמה שרוצים, וכל תשובה נכונה מוסיפה כוכבים.</p>
         <button class="ghost" id="home">למסך הבית</button>
       </div>
     </section>`;
@@ -412,7 +490,7 @@ function status() {
   const rows = TOPICS.flatMap(tp => tp.subs.map(s => ({ tp, s, st: subStats(tp, s) })));
   const group = lv => rows.filter(x => x.st.level === lv);
   const LV = { good: ['✅', 'שולט'], mid: ['🙂', 'בתהליך'], weak: ['⚠️', 'צריך עוד תרגול'], new: ['⚪', 'עוד לא תורגל'] };
-  const row = x => `<div class="srow ${x.st.level}"><span>${LV[x.st.level][0]}</span><div><b>${x.s.name}</b>
+  const row = x => `<div class="srow ${x.st.level}"><span>${LV[x.st.level][0]}</span><div><b>${x.s.name} <span class="lvl">רמה ${x.st.lvl}/${MAX_LEVEL}</span></b>
     <small>${x.tp.icon} ${x.st.n ? `${Math.round(100 * x.st.acc)}% נכונות · ${x.st.n} שאלות · ${x.st.mastered}/${x.st.total} סוגי שאלות נרכשו` : 'עוד לא היו שאלות מהנושא הזה'}</small></div></div>`;
   const cal = Array.from({ length: 28 }, (_, i) => {
     const k = shift(t, i - 27), d = S.days[k];
@@ -432,7 +510,7 @@ function status() {
     ${TOPICS.map(tp => `<div class="tprog">${tp.icon} ${tp.title}<div class="bar"><i style="width:${topicProgress(tp)}%"></i></div><small>${topicProgress(tp)}% מסוגי השאלות נרכשו</small></div>`).join('')}
     ${sections}
     ${S.recent.length ? `<h3>טעויות אחרונות</h3><ul class="recent">${S.recent.slice(0, 8).map(x => `<li>${x.r || x.s} <small dir="ltr">${x.d.slice(5).split('-').reverse().join('/')}</small></li>`).join('')}</ul>` : ''}
-    <p class="note">"נרכש" = סוג שאלה שנענה נכון כמה פעמים, בימים שונים. נושא מסומן "שולט" כשיש בו לפחות 80% נכונות ורוב סוגי השאלות נרכשו.</p>
+    <p class="note">רמה: לכל תת-נושא יש 3 רמות קושי. אחרי 7 תשובות נכונות מתוך 8 האחרונות (בניסיון ראשון ובלי רמז) הוא עולה רמה, ומתווספות שאלות מאתגרות יותר.<br>"נרכש" = סוג שאלה שנענה נכון כמה פעמים, בימים שונים. נושא מסומן "שולט" כשיש בו לפחות 80% נכונות ורוב סוגי השאלות נרכשו.</p>
     <button class="ghost danger" id="reset">איפוס כל ההתקדמות</button>`;
   $('#reset').onclick = () => {
     if (confirm('למחוק את כל ההתקדמות, הרצף והגביעים?') && confirm('בטוח? אי אפשר לבטל.')) { S = fresh(); save(); home(); }

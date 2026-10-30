@@ -178,3 +178,28 @@ h3 { margin: 18px 0 8px; font-size: 1.05rem; }
 @keyframes fly { to { transform: translate(-50%, -70px) scale(1.4); opacity: 0; } }
 @keyframes pulse { 50% { transform: scale(1.15); } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+
+/* question kinds: true/false, tap on the figure, put steps in order */
+.opts.two { grid-template-columns: 1fr 1fr; }
+.opts.two .opt { font-size: 1.2rem; font-weight: 800; min-height: 64px; }
+.how { text-align: center; color: var(--violet); font-weight: 600; margin: 4px 0 0; }
+.fig .hit { stroke: transparent; stroke-width: 22; stroke-linecap: round; fill: none; cursor: pointer; pointer-events: all; }
+.fig .hit.spot { fill: transparent; stroke: none; }
+.fig .hit.right { stroke: rgba(34, 160, 107, .45); }
+.fig .hit.spot.right { fill: rgba(34, 160, 107, .45); }
+.fig .hit.wrong { stroke: rgba(229, 72, 77, .45); }
+.fig .hit.spot.wrong { fill: rgba(229, 72, 77, .45); }
+.opts.steps .opt { text-align: right; font-size: 1rem; }
+.opt.used { opacity: .35; }
+.picked { background: var(--card); border-radius: 14px; padding: 8px 30px 8px 12px; margin: 8px 0; min-height: 30px; box-shadow: 0 2px 0 var(--edge); line-height: 1.6; }
+.picked:empty::before { content: 'השלב הראשון יופיע כאן'; color: var(--soft); font-size: .9rem; margin-right: -18px; }
+.picked.right { background: #dcfce7; }
+.picked.wrong { background: #fee2e2; }
+.correct-order { background: #ecfdf5; border-radius: 14px; padding: 8px 12px; line-height: 1.6; }
+.correct-order ol { margin: 4px 0; padding-inline-start: 20px; }
+.levelup { background: linear-gradient(135deg, #ede9fe, #e0f2fe); border-radius: 16px; padding: 12px; margin-top: 12px; text-align: center; animation: pop .6s ease-out; }
+.levelup b { display: block; font-size: 1.15rem; color: var(--violet); }
+.levelup small { color: var(--soft); }
+.newtrophy.up { background: linear-gradient(135deg, #e0f2fe, #ecfdf5); }
+.more { color: var(--soft); font-size: .9rem; margin: 8px 0 0; }
+.lvl { font-size: .75rem; font-weight: 600; color: var(--violet); background: #f3e8ff; border-radius: 99px; padding: 1px 7px; margin-inline-start: 4px; }
