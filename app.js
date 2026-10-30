@@ -107,7 +107,8 @@
   const FOCUS_NEW = 6;               // test words taught per day (instead of the regular new words)
   const FOCUS_MAX_NEW = 10;          // ...or up to this many when the test is close
   const FOCUS_OLD = 8;               // test words already seen, asked again every day until the test
-  const EXTRA_BONUS = 0.3;           // chance that an extra round pays 2 coins instead of 1 (a little surprise)
+  // Extra rounds pay a varying amount, so each one is a small surprise: [coins, chance].
+  const EXTRA_REWARDS = [[5, 0.07], [2, 0.28], [1, 0.65]]; // about 1.5 coins a round on average
   const BY_CAT = {};
   ALL_IDS.forEach((id) => { (BY_CAT[W[id].cat] = BY_CAT[W[id].cat] || []).push(id); });
 
@@ -625,10 +626,14 @@
   }
 
   // ---------- Extra rounds ----------
-  // Every extra round earns a little, with no daily limit: 1 coin, sometimes 2.
+  // Every extra round earns a little, with no daily limit: usually 1 coin, sometimes 2, once in a while 5.
   function extraCoins() {
-    const surprise = Math.random() < EXTRA_BONUS;
-    return { coins: surprise ? 2 : 1, surprise };
+    let r = Math.random();
+    for (const [coins, chance] of EXTRA_REWARDS) {
+      if (r < chance) return { coins, surprise: coins > 1 };
+      r -= chance;
+    }
+    return { coins: 1, surprise: false };
   }
 
   // ---------- Streak, coins & city ----------
@@ -1273,7 +1278,7 @@
     const pct = session.total ? Math.round((session.right / session.total) * 100) : 100;
     h(`
       <main class="screen center">
-        ${surprise ? `<div class="milestone pop">🎲 הפתעה! עוד מטבע</div>` : ''}
+        ${surprise ? `<div class="milestone pop">${coins >= 5 ? `💰 בונוס ענק! ${coins} מטבעות` : `🎲 הפתעה! ${coins} מטבעות`}</div>` : ''}
         ${milestone ? `<div class="milestone pop">🏆 ${milestone} ימים ברצף! +${MILESTONES[milestone]} 🪙</div>` : ''}
         <h1>${session.bonus ? (session.fresh.length ? `למדת עוד ${session.fresh.length} מילים!` : 'האימון הנוסף הושלם') : pct >= 80 ? 'משימה הושלמה!' : pct >= 50 ? 'יפה מאוד!' : 'עבודה טובה!'}</h1>
         <div class="summary card">
@@ -1562,7 +1567,7 @@
         ${others.map((p) => `<p class="note">${avatar(p.avatar)} ${esc(p.name)} ${p.lastSessionDay === day ? `כבר ${g(p, 'סיים', 'סיימה')} היום ✓` : `עוד לא ${g(p, 'שיחק', 'שיחקה')} היום. אולי תזכירו?`}</p>`).join('')}
         <section class="card done-card">
           <h3>בא לך עוד?</h3>
-          <p class="muted small">רק אם בא לך. כל אימון נוסף מביא מטבע, ולפעמים יש הפתעה ומקבלים שניים 🎲</p>
+          <p class="muted small">רק אם בא לך. כל אימון נוסף מביא מטבעות, ואף פעם לא יודעים כמה 🎲</p>
           <button class="btn primary big" id="extra-new">✨ 3 מילים חדשות · 🪙</button>
           <button class="btn ghost" id="extra">🔁 אימון על מילים שלמדתי · 🪙</button>
         </section>
