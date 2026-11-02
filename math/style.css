@@ -203,3 +203,17 @@ h3 { margin: 18px 0 8px; font-size: 1.05rem; }
 .newtrophy.up { background: linear-gradient(135deg, #e0f2fe, #ecfdf5); }
 .more { color: var(--soft); font-size: .9rem; margin: 8px 0 0; }
 .lvl { font-size: .75rem; font-weight: 600; color: var(--violet); background: #f3e8ff; border-radius: 99px; padding: 1px 7px; margin-inline-start: 4px; }
+
+/* guided homework */
+.topic.hw { background: linear-gradient(135deg, #fef3c7, #fff); box-shadow: 0 4px 0 #fcd34d; }
+.hwintro { color: var(--soft); line-height: 1.5; }
+.hwgrid { display: grid; gap: 8px; }
+.hwitem { display: flex; align-items: center; gap: 12px; background: var(--card); border-radius: 14px; padding: 12px 14px; box-shadow: 0 3px 0 var(--edge); text-align: right; }
+.hwitem .num { font-weight: 800; color: var(--violet); min-width: 26px; }
+.hwitem .ex { flex: 1; font-size: 1.1rem; text-align: left; }
+.hwitem.done { background: #ecfdf5; box-shadow: 0 3px 0 #a7f3d0; }
+.hwexpr { background: var(--card); border-radius: 14px; padding: 10px; text-align: center; font-size: 1.35rem; margin: 8px 0; box-shadow: 0 2px 0 var(--edge); }
+.hwwrite { font-size: 1.1rem; font-weight: 600; line-height: 1.6; }
+.reveal { background: var(--card); border-radius: 14px; padding: 10px 14px; margin: 12px 0; text-align: right; }
+.reveal div { text-align: center; font-size: 1.25rem; margin-top: 8px; }
+.toast { background: #fef3c7; border-radius: 14px; padding: 10px 14px; margin-top: 8px; text-align: center; font-weight: 600; animation: pop .5s ease-out; }

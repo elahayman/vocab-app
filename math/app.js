@@ -15,7 +15,8 @@ const fresh = () => ({
   subs: {},      // 'topic:sub' → { ok, bad }
   recent: [],    // last mistakes: { r: rule, d: day key }
   stars: 0, rounds: 0, perfects: 0, fixes: 0, bestCombo: 0,
-  lv: {}, hist: {}, // difficulty level per subtopic, and its recent first-try results
+  lv: {}, hist: {},
+  hw: {}, hwDay: {}, // homework: done exercises per homework id, and how many were finished each day // difficulty level per subtopic, and its recent first-try results
   trophies: {}, shields: 0, frozen: {}, mute: false,
 });
 let S;
@@ -185,6 +186,7 @@ const TROPHIES = [
   ['factor', '🛠️', 'מפרק מקצועי', 'לשלוט בפירוק לגורמים', () => subMastered('algebra', 'factor')],
   ['lvl2', '📈', 'עולה שלב', 'להגיע לרמה 2 בתת-נושא כלשהו', () => Object.values(S.lv).some(v => v >= 2)],
   ['lvl3', '🚀', 'מקצוען', 'להגיע לרמה 3 בתת-נושא כלשהו', () => Object.values(S.lv).some(v => v >= 3)],
+  ['hw', '📝', 'שיעורי בית בכיס', 'לסיים את כל התרגילים בשיעורי בית מודרכים', () => (window.HOMEWORK || []).some(h => h.items.every(x => (S.hw[h.id] || {})[x.n]))],
   ['geo', '🏛️', 'גאומטריקן', 'לשלוט בכל נושאי הגאומטריה', () => topicById('geometry').subs.every(s => subMastered('geometry', s.id))],
 ];
 function checkTrophies() {
@@ -232,6 +234,12 @@ function home() {
       <div class="bar"><i style="width:${pct}%"></i></div>
       <span class="stars">⭐ ${S.stars}</span>
     </section>
+    ${activeHomework().map(hw => {
+      const n = hw.items.filter(x => (S.hw[hw.id] || {})[x.n]).length;
+      return `<button class="topic hw" data-hw="${hw.id}"><span class="ic">${hw.icon}</span><span class="tx"><b>${hw.title}</b>
+        <small>${n === hw.items.length ? 'הכול מוכן! ✅' : `${n} מתוך ${hw.items.length} תרגילים`}</small>
+        <span class="bar"><i style="width:${100 * n / hw.items.length}%"></i></span></span></button>`;
+    }).join('')}
     <h2 class="pick">מה מתרגלים היום?</h2>
     ${TOPICS.map(tp => `
       <button class="topic" data-mode="${tp.id}">
@@ -251,6 +259,7 @@ function home() {
       <button data-go="rules">📖<small>דף חוקים</small></button>
     </nav>`;
   app.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => startRound(b.dataset.mode));
+  app.querySelectorAll('[data-hw]').forEach(b => b.onclick = () => hwList(window.HOMEWORK.find(h => h.id === b.dataset.hw)));
   app.querySelectorAll('[data-go]').forEach(b => b.onclick = () => ({ trophies, status, rules })[b.dataset.go]());
   $('#mute').onclick = () => { S.mute = !S.mute; save(); home(); };
   window.scrollTo(0, 0);
@@ -455,6 +464,100 @@ function finish() {
     </section>`;
   $('#again').onclick = () => startRound(Q.mode);
   $('#home').onclick = home;
+  window.scrollTo(0, 0);
+}
+
+
+// ---------- guided homework ----------
+// Leads him through each exercise with small questions; he writes the actual answer in his notebook.
+const activeHomework = () => (window.HOMEWORK || []).filter(h => today() <= h.until);
+const ltr = o => (/[א-ת]/.test(o) ? o : M(o));
+
+function hwList(hw) {
+  const done = S.hw[hw.id] || {};
+  app.innerHTML = backBar(hw.icon + ' ' + hw.title) + `
+    <p class="hwintro">${hw.intro}</p>
+    <div class="hwgrid">${hw.items.map(x => `
+      <button class="hwitem ${done[x.n] ? 'done' : ''}" data-n="${x.n}">
+        <span class="num">${x.n}</span><span class="ex">${M(x.expr)}</span><span class="st">${done[x.n] ? '✅' : '▶'}</span>
+      </button>`).join('')}</div>`;
+  app.querySelectorAll('.hwitem').forEach(b => b.onclick = () => hwRun(hw, hw.items.find(x => x.n === +b.dataset.n)));
+  bindBack();
+}
+
+function hwRun(hw, item, i = 0, firstTry = true) {
+  const st = item.steps[i];
+  if (!st) return hwWrite(hw, item);
+  const order = R.shuffle(st.opts.map((_, k) => k));
+  app.innerHTML = `
+    <header class="qtop">
+      <button class="chip" id="back" aria-label="חזרה">→</button>
+      <div class="bar prog"><i style="width:${100 * i / (item.steps.length + 1)}%"></i></div>
+      <span class="combo">${i + 1}/${item.steps.length}</span>
+    </header>
+    <div class="tag">${hw.icon} תרגיל ${item.n}</div>
+    <div class="hwexpr">${M(item.expr)}</div>
+    <h2 class="question">${st.q}</h2>
+    <div class="opts">${order.map(k => `<button class="opt" data-i="${k}">${ltr(st.opts[k])}</button>`).join('')}</div>
+    ${st.hint ? '<div class="under"><button class="hint" id="hint">💡 רמז</button></div>' : ''}
+    <div id="fb"></div>`;
+  $('#back').onclick = () => hwList(hw);
+  if (st.hint) $('#hint').onclick = () => { $('#hint').outerHTML = `<div class="hintbox">💡 ${st.hint}</div>`; };
+  app.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+    const ok = +b.dataset.i === 0;
+    app.querySelectorAll('.opt').forEach(x => { x.disabled = true; });
+    b.classList.add(ok ? 'right' : 'wrong');
+    if (ok) { Snd.ok(); if (firstTry) { S.stars++; save(); } }
+    else { Snd.bad(); if (navigator.vibrate) navigator.vibrate(60); }
+    $('#fb').innerHTML = ok ? `
+      <div class="fb ok"><div class="fbhead"><b>✅ נכון!</b>${firstTry ? '<span class="gain">+1 ⭐</span>' : ''}</div>
+        <p>${st.explain}</p><button class="next" id="next">הלאה ←</button></div>` : `
+      <div class="fb bad"><div class="fbhead"><b>עוד לא. הנה רמז גדול:</b></div>
+        <p>${st.explain}</p><button class="next" id="next">לנסות שוב</button></div>`;
+    $('#next').onclick = () => (ok ? hwRun(hw, item, i + 1, true) : hwRun(hw, item, i, false));
+    setTimeout(() => $('#fb').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  });
+  window.scrollTo(0, 0);
+}
+
+function hwWrite(hw, item) {
+  app.innerHTML = `
+    <header class="qtop"><button class="chip" id="back" aria-label="חזרה">→</button><div class="bar prog"><i style="width:100%"></i></div><span></span></header>
+    <section class="end">
+      <div class="big">✍️</div>
+      <h2>עכשיו תורך!</h2>
+      <div class="hwexpr">${M(item.expr)}</div>
+      <p class="hwwrite">${item.write}</p>
+      <p class="more">כתוב את הפירוק במחברת. בסוף אפשר לבדוק: פותחים סוגריים וצריך לחזור לתרגיל.</p>
+      <details class="reveal"><summary>בדיקה (רק אחרי שכתבת!)</summary><div>${M(item.check)}</div></details>
+      <button class="next" id="donehw">כתבתי במחברת ✔</button>
+      <button class="ghost" id="list">לרשימת התרגילים</button>
+    </section>`;
+  $('#back').onclick = () => hwList(hw);
+  $('#list').onclick = () => hwList(hw);
+  $('#donehw').onclick = () => {
+    const first = !(S.hw[hw.id] || {})[item.n];
+    S.hw[hw.id] = { ...(S.hw[hw.id] || {}), [item.n]: today() };
+    let msg = '';
+    if (first) {
+      S.stars += 3;
+      const t = today(), c = (S.hwDay[t] || 0) + 1;
+      S.hwDay[t] = c;
+      // Three homework exercises in a day count as the daily task.
+      if (c === 3 && !(S.days[t] || {}).goal) {
+        S.days[t] = { ...(S.days[t] || { q: 0, ok: 0, rounds: 0 }), goal: true };
+        msg = `<div class="levelup">🔥 <b>שלושה תרגילים היום = המשימה היומית בוצעה!</b><small>${streak()} ימים ברצף</small></div>`;
+      }
+    }
+    const all = hw.items.every(x => (S.hw[hw.id] || {})[x.n]);
+    const got = checkTrophies();
+    save();
+    Snd.win(); burst(['⭐', '✍️', '✨']);
+    hwList(hw);
+    app.insertAdjacentHTML('afterbegin', `<div class="toast">${first ? '+3 ⭐ על התרגיל!' : 'כל הכבוד!'} ${all ? '<b>סיימת את כל שיעורי הבית! 🏆</b>' : ''}</div>`);
+    if (msg) app.querySelector('.hwintro').insertAdjacentHTML('beforebegin', msg);
+    got.forEach(x => app.querySelector('.hwintro').insertAdjacentHTML('beforebegin', `<div class="newtrophy"><span>${x.ic}</span><div><small>גביע חדש!</small><b>${x.name}</b></div></div>`));
+  };
   window.scrollTo(0, 0);
 }
 
