@@ -16,7 +16,8 @@ const fresh = () => ({
   recent: [],    // last mistakes: { r: rule, d: day key }
   stars: 0, rounds: 0, perfects: 0, fixes: 0, bestCombo: 0,
   lv: {}, hist: {},
-  hw: {}, hwDay: {}, // homework: done exercises per homework id, and how many were finished each day // difficulty level per subtopic, and its recent first-try results
+  hw: {}, hwDay: {}, sheet: {}, // sheet: exercises he ticked as solved alone on a paper sheet, per homework id
+  // homework: done exercises per homework id, and how many were finished each day // difficulty level per subtopic, and its recent first-try results
   trophies: {}, shields: 0, frozen: {}, mute: false,
 });
 let S;
@@ -236,8 +237,9 @@ function home() {
     </section>
     ${activeHomework().map(hw => {
       const n = hw.items.filter(x => (S.hw[hw.id] || {})[x.n]).length;
+      const solo = hw.sheet ? ` · ✍️ ${Object.keys(S.sheet[hw.id] || {}).length} סומנו בדף` : '';
       return `<button class="topic hw" data-hw="${hw.id}"><span class="ic">${hw.icon}</span><span class="tx"><b>${hw.title}</b>
-        <small>${n === hw.items.length ? 'הכול מוכן! ✅' : `${n} מתוך ${hw.items.length} תרגילים`}</small>
+        <small>${n === hw.items.length ? 'הכול מוכן! ✅' : `${n} מתוך ${hw.items.length} מודרכים`}${solo}</small>
         <span class="bar"><i style="width:${100 * n / hw.items.length}%"></i></span></span></button>`;
     }).join('')}
     <h2 class="pick">מה מתרגלים היום?</h2>
@@ -477,16 +479,62 @@ const hwState = (item, i) => (item.steps.slice(0, i).reverse().find(s => s.after
 const hwExpr = (item, now) => `${now !== item.expr ? `<small class="from">${M(item.expr)}</small>` : ''}<span class="now">${M(now)}</span>`;
 const hwPath = item => [item.expr, ...item.steps.map(s => s.after).filter(a => a && !a.includes('…'))];
 
+// "gcf-14" → "עמודים 1-2 · תרגיל 14"
+const srcLabel = (hw, k) => {
+  const [id, num] = k.split('-'), sec = (hw.sheet || []).find(s => s.id === id);
+  return sec ? `${sec.pages} · תרגיל ${num}` : '';
+};
+const sheetTotal = hw => (hw.sheet || []).reduce((a, s) => a + s.count, 0);
+
 function hwList(hw) {
-  const done = S.hw[hw.id] || {};
+  const done = S.hw[hw.id] || {}, solo = S.sheet[hw.id] || {};
+  let sec = '';
   app.innerHTML = backBar(hw.icon + ' ' + hw.title) + `
     <p class="hwintro">${hw.intro}</p>
+    ${hw.sheet ? `<button class="topic sheetbtn" id="sheet"><span class="ic">✍️</span><span class="tx"><b>מה פתרתי לבד בדף</b>
+      <small>${Object.keys(solo).length} מתוך ${sheetTotal(hw)} תרגילים סומנו</small>
+      <span class="bar"><i style="width:${100 * Object.keys(solo).length / sheetTotal(hw)}%"></i></span></span></button>
+      <h2 class="pick">תרגילים מודרכים</h2>` : ''}
     <div class="hwgrid">${hw.items.map(x => `
+      ${x.sec && x.sec !== sec ? `<h3 class="hwsec">${(sec = x.sec)}</h3>` : ''}
       <button class="hwitem ${done[x.n] ? 'done' : ''}" data-n="${x.n}">
-        <span class="num">${x.n}</span><span class="ex">${M(x.expr)}</span><span class="st">${done[x.n] ? '✅' : '▶'}</span>
+        <span class="num">${x.n}</span>
+        <span class="ex">${M(x.expr)}${x.src ? `<small class="src">${srcLabel(hw, x.src)}${solo[x.src] ? ' · ✍️ פתרת לבד' : ''}</small>` : ''}</span>
+        <span class="st">${done[x.n] ? '✅' : '▶'}</span>
       </button>`).join('')}</div>`;
   app.querySelectorAll('.hwitem').forEach(b => b.onclick = () => hwRun(hw, hw.items.find(x => x.n === +b.dataset.n)));
+  if (hw.sheet) $('#sheet').onclick = () => sheetView(hw);
   bindBack();
+}
+
+// The whole paper sheet: he taps every exercise he solved alone. First tick of each = +1 star.
+function sheetView(hw) {
+  const solo = () => S.sheet[hw.id] || {};
+  const count = id => Object.keys(solo()).filter(k => k.startsWith(id + '-')).length;
+  app.innerHTML = backBar('✍️ מה פתרתי לבד בדף') + `
+    <p class="hwintro">סמן כל תרגיל שפתרת <b>לבד</b> בדף, בלי עזרה. על כל סימון מקבלים ⭐. סימנת בטעות? לוחצים שוב.</p>
+    <div class="card sheettotal"><b id="tot">${Object.keys(solo()).length}</b> מתוך ${sheetTotal(hw)} תרגילים</div>
+    ${hw.sheet.map(sec => `
+      <h3 class="hwsec">${sec.name} <small>${sec.pages} · <span id="c-${sec.id}">${count(sec.id)}</span>/${sec.count}</small></h3>
+      <div class="sheetgrid">${Array.from({ length: sec.count }, (_, i) => `${sec.id}-${i + 1}`).map(k => `
+        <button class="chipn ${solo()[k] ? 'on' : ''}" data-k="${k}">${k.split('-')[1]}</button>`).join('')}</div>`).join('')}
+    <button class="ghost" id="tolist">לתרגילים המודרכים</button>`;
+  app.querySelectorAll('.chipn').forEach(b => b.onclick = () => {
+    const k = b.dataset.k, cur = { ...solo() };
+    if (cur[k]) { delete cur[k]; S.stars = Math.max(0, S.stars - 1); b.classList.remove('on'); }
+    else {
+      cur[k] = today(); S.stars++; b.classList.add('on'); Snd.ok();
+      if (Object.keys(cur).length % 10 === 0) burst(['⭐', '✍️', '✨']);
+    }
+    S.sheet[hw.id] = cur;
+    save();
+    $('#tot').textContent = Object.keys(cur).length;
+    const id = k.split('-')[0];
+    $('#c-' + id).textContent = count(id);
+  });
+  $('#back').onclick = () => hwList(hw);
+  $('#tolist').onclick = () => hwList(hw);
+  window.scrollTo(0, 0);
 }
 
 function hwRun(hw, item, i = 0, firstTry = true) {
