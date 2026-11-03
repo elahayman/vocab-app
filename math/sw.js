@@ -1,5 +1,5 @@
 // Offline support for מעבדת המתמטיקה: cache the app shell, serve it cache-first, refresh in the background.
-const CACHE = 'math-lab-v4';
+const CACHE = 'math-lab-v5';
 const SHELL = ['./', 'index.html', 'style.css', 'lib.js', 'topics/geometry.js', 'topics/algebra.js', 'topics/homework.js', 'app.js', 'manifest.webmanifest', 'icon-192.png'];
 
 self.addEventListener('install', (e) => {

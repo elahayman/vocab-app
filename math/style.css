@@ -211,6 +211,16 @@ h3 { margin: 18px 0 8px; font-size: 1.05rem; }
 .hwitem { display: flex; align-items: center; gap: 12px; background: var(--card); border-radius: 14px; padding: 12px 14px; box-shadow: 0 3px 0 var(--edge); text-align: right; }
 .hwitem .num { font-weight: 800; color: var(--violet); min-width: 26px; }
 .hwitem .ex { flex: 1; font-size: 1.1rem; text-align: left; }
+.hwitem .src { display: block; font-size: .72rem; opacity: .6; text-align: left; direction: rtl; margin-top: 2px; }
+.hwsec { margin: 14px 0 4px; font-size: 1rem; }
+.hwsec small { font-weight: 400; opacity: .65; margin-right: 6px; }
+.sheetbtn { margin: 8px 0; }
+.sheettotal { text-align: center; padding: 10px; margin: 8px 0; }
+.sheettotal b { font-size: 1.4rem; color: var(--violet); }
+.sheetgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
+.chipn { background: var(--card); border-radius: 10px; padding: 9px 0; font-weight: 700; box-shadow: 0 2px 0 var(--edge); font-size: 1rem; }
+.chipn.on { background: #22c55e; color: #fff; box-shadow: 0 2px 0 #15803d; }
+.chipn.on::after { content: ' ✓'; font-size: .75rem; }
 .hwitem.done { background: #ecfdf5; box-shadow: 0 3px 0 #a7f3d0; }
 .hwexpr { background: var(--card); border-radius: 14px; padding: 10px; text-align: center; font-size: 1.35rem; margin: 8px 0; box-shadow: 0 2px 0 var(--edge); }
 .hwexpr .from { display: block; font-size: .85rem; opacity: .6; margin-bottom: 4px; }
