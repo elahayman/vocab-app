@@ -472,6 +472,10 @@ function finish() {
 // Leads him through each exercise with small questions; he writes the actual answer in his notebook.
 const activeHomework = () => (window.HOMEWORK || []).filter(h => today() <= h.until);
 const ltr = o => (/[א-ת]/.test(o) ? o : M(o));
+// The expression as it looks before step i: the `after` of the last finished step that has one.
+const hwState = (item, i) => (item.steps.slice(0, i).reverse().find(s => s.after) || { after: item.expr }).after;
+const hwExpr = (item, now) => `${now !== item.expr ? `<small class="from">${M(item.expr)}</small>` : ''}<span class="now">${M(now)}</span>`;
+const hwPath = item => [item.expr, ...item.steps.map(s => s.after).filter(a => a && !a.includes('…'))];
 
 function hwList(hw) {
   const done = S.hw[hw.id] || {};
@@ -496,7 +500,7 @@ function hwRun(hw, item, i = 0, firstTry = true) {
       <span class="combo">${i + 1}/${item.steps.length}</span>
     </header>
     <div class="tag">${hw.icon} תרגיל ${item.n}</div>
-    <div class="hwexpr">${M(item.expr)}</div>
+    <div class="hwexpr" id="hwexpr">${hwExpr(item, hwState(item, i))}</div>
     <h2 class="question">${st.q}</h2>
     <div class="opts">${order.map(k => `<button class="opt" data-i="${k}">${ltr(st.opts[k])}</button>`).join('')}</div>
     ${st.hint ? '<div class="under"><button class="hint" id="hint">💡 רמז</button></div>' : ''}
@@ -507,7 +511,10 @@ function hwRun(hw, item, i = 0, firstTry = true) {
     const ok = +b.dataset.i === 0;
     app.querySelectorAll('.opt').forEach(x => { x.disabled = true; });
     b.classList.add(ok ? 'right' : 'wrong');
-    if (ok) { Snd.ok(); if (firstTry) { S.stars++; save(); } }
+    if (ok) {
+      Snd.ok(); if (firstTry) { S.stars++; save(); }
+      if (st.after) { const e = $('#hwexpr'); e.innerHTML = hwExpr(item, st.after); e.classList.add('moved'); }
+    }
     else { Snd.bad(); if (navigator.vibrate) navigator.vibrate(60); }
     $('#fb').innerHTML = ok ? `
       <div class="fb ok"><div class="fbhead"><b>✅ נכון!</b>${firstTry ? '<span class="gain">+1 ⭐</span>' : ''}</div>
@@ -527,9 +534,11 @@ function hwWrite(hw, item) {
       <div class="big">✍️</div>
       <h2>עכשיו תורך!</h2>
       <div class="hwexpr">${M(item.expr)}</div>
-      <p class="hwwrite">${item.write}</p>
+      <p class="hwwrite">${item.write || 'כתוב במחברת את כל הדרך, שלב אחרי שלב, בלי להציץ.'}</p>
       <p class="more">כתוב את הפירוק במחברת. בסוף אפשר לבדוק: פותחים סוגריים וצריך לחזור לתרגיל.</p>
-      <details class="reveal"><summary>בדיקה (רק אחרי שכתבת!)</summary><div>${M(item.check)}</div></details>
+      <details class="reveal"><summary>בדיקה (רק אחרי שכתבת!)</summary>${hwPath(item).length > 2
+        ? hwPath(item).map((x, k) => `<div>${M((k ? '= ' : '') + x)}</div>`).join('')
+        : `<div>${M(item.check)}</div>`}</details>
       <button class="next" id="donehw">כתבתי במחברת ✔</button>
       <button class="ghost" id="list">לרשימת התרגילים</button>
     </section>`;
@@ -554,7 +563,7 @@ function hwWrite(hw, item) {
     save();
     Snd.win(); burst(['⭐', '✍️', '✨']);
     hwList(hw);
-    app.insertAdjacentHTML('afterbegin', `<div class="toast">${first ? '+3 ⭐ על התרגיל!' : 'כל הכבוד!'} ${all ? '<b>סיימת את כל שיעורי הבית! 🏆</b>' : ''}</div>`);
+    app.insertAdjacentHTML('afterbegin', `<div class="toast">${first ? '+3 ⭐ על התרגיל!' : 'כל הכבוד!'} ${all ? '<b>סיימת את כל התרגילים! 🏆</b>' : ''}</div>`);
     if (msg) app.querySelector('.hwintro').insertAdjacentHTML('beforebegin', msg);
     got.forEach(x => app.querySelector('.hwintro').insertAdjacentHTML('beforebegin', `<div class="newtrophy"><span>${x.ic}</span><div><small>גביע חדש!</small><b>${x.name}</b></div></div>`));
   };
