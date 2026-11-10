@@ -25,3 +25,12 @@
 - "לחזק נקודות חלשות" מופיע כשיש תת-נושאים עם נכונות נמוכה.
 - מגן רצף כל 7 ימים ברצף (עד 2), מכסה יום שהוחמץ.
 - סקירת מצב: רצף, לוח 4 שבועות, התקדמות לכל נושא, תת-נושאים לפי "שולט / צריך עוד תרגול / בתהליך / עוד לא תורגל", טעויות אחרונות.
+
+## Step-by-step exercises and coins (2026-11-10)
+- `topics/chains.js` adds "תרגיל בשלבים" templates to the algebra and geometry topics: a real exercise with fresh numbers,
+  solved in multiple-choice steps; each step's `after` updates the expression box. Up to `CHAINS` (5) of the 8 questions
+  in a round are chains.
+- Coins (`S.coins`): 1 per right step, +3 for a whole exercise with no mistake, 2 per quick question, round bonuses,
+  a daily visit bonus that grows with the streak, and milestones at 10/25/50/100 steps a day. Everything is multiplied by the
+  streak bonus (×1.1 per day in a row, up to ×2). The wallet screen has a small shop (streak shield, colour themes, and a
+  "prize from the parents" that is logged in `S.redeems` and shown on the status screen).
