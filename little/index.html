@@ -162,6 +162,13 @@ button:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
 .bar .grow { gap: 8px; align-items: center; }
 .star-count { font-family: var(--display); font-weight: 800; font-size: 1.3rem; color: var(--blue-deep); background: var(--card); border-radius: 999px; padding: 4px 12px; box-shadow: 0 3px 0 var(--card-edge); white-space: nowrap; }
 .star-count.bump { animation: hop .4s; }
+button.star-count { border: 0; cursor: pointer; }
+.stickers { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 12px; width: 100%; }
+.sticker { aspect-ratio: 1; border: 4px solid #ffcf33; border-radius: 22px; background: #fffbe6; display: grid; place-items: center; box-shadow: 0 4px 0 #e0a800; cursor: pointer; padding: 4px; font: inherit; }
+.sticker .pic { font-size: 52px; line-height: 1; }
+.sticker .pic.count { font-size: 15px; }
+.sticker .blob { width: 56px; height: 56px; }
+.sticker.hop { animation: hop .4s; }
 .fly-star { position: fixed; z-index: 8; font-size: 44px; font-style: normal; margin: -22px 0 0 -22px; animation: star-fly .8s cubic-bezier(.5,-0.4,.7,1) forwards; pointer-events: none; }
 @keyframes star-fly { to { transform: translate(var(--tx), var(--ty)) scale(.5) rotate(200deg); } }
 .cones-btn b { position: absolute; top: -4px; right: -4px; min-width: 24px; height: 24px; padding: 0 5px; box-sizing: border-box; border-radius: 12px; background: var(--berry); color: #fff; font-family: var(--display); font-size: 14px; line-height: 24px; }
@@ -179,7 +186,8 @@ button:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
 .scene .cloud { position: absolute; left: 10%; top: 4%; font-size: 3.4rem; opacity: .8; }
 .scene .table { position: absolute; left: 15%; width: 70%; top: 45%; }
 .scene .table svg { display: block; }
-.scene .box { position: absolute; left: 50%; bottom: 5%; transform: translateX(-50%); font-size: 7rem; line-height: 1; z-index: 3; pointer-events: none; }
+.scene .box { position: absolute; left: 20%; bottom: 5%; width: 60%; z-index: 1; pointer-events: none; }
+.scene .box svg { display: block; }
 .thing { position: absolute; line-height: 1; transform: translate(-50%, -50%); cursor: grab; touch-action: none; z-index: 2; filter: drop-shadow(0 4px 4px rgba(27,58,92,.25)); }
 .thing.held { transform: translate(-50%, -50%) scale(1.15); cursor: grabbing; }
 .thing.glide { transition: left .35s, top .35s; }
@@ -353,6 +361,8 @@ const A = (el, style) => `<span style="${style}">${el}</span>`;
 const CONCEPT_CATS = ['animals', 'go', 'sweets', 'fruit', 'music', 'toys', 'kitchen', 'clothes', 'sky', 'shapes'];
 const GROUND = '<i class="ground"></i>';
 const TABLE = '<svg viewBox="0 0 100 70" width="100%"><rect x="2" y="4" width="96" height="10" rx="3" fill="#c98a3c" stroke="#8b5a2b" stroke-width="2"/><rect x="10" y="14" width="8" height="54" fill="#c98a3c" stroke="#8b5a2b" stroke-width="2"/><rect x="82" y="14" width="8" height="54" fill="#c98a3c" stroke="#8b5a2b" stroke-width="2"/></svg>';
+const BOX = '<svg viewBox="0 0 100 100" width="100%"><path d="M4 4 H96 L80 16 H20 Z" fill="#b97e45"/><path d="M4 4 L20 16 V74 L4 96 Z" fill="#c98d52"/><path d="M96 4 L80 16 V74 L96 96 Z" fill="#c98d52"/><rect x="20" y="16" width="60" height="58" fill="#8e5a2c"/><path d="M4 96 L20 74 H80 L96 96 Z" fill="#e3ad6e"/><path d="M4 4 H96 V96 H4 Z" fill="none" stroke="#8b5a2b" stroke-width="3" stroke-linejoin="round"/><path d="M20 16 H80 V74 H20 Z" fill="none" stroke="#7a4a20" stroke-width="2"/></svg>';
+const B = (style) => `<span style="width:1.3em;${style}">${BOX}</span>`;
 const T = (style) => `<span style="width:1.4em;${style}">${TABLE}</span>`;
 const CONCEPT_KEYS = ['size', 'updown', 'table', 'box', 'tree'];
 const CONCEPTS = [
@@ -360,10 +370,10 @@ const CONCEPTS = [
     { c: 'small', art: e => A(e, 'font-size:.55em;bottom:0'), learn: n => `Small! A small ${n}.`, q: n => `Where is the small ${n}?` } ],
   [ { c: 'up', art: e => A(e, 'font-size:.7em;top:0') + GROUND, learn: n => `Up! The ${n} is up.`, q: n => `Which ${n} is up?` },
     { c: 'down', art: e => A(e, 'font-size:.7em;bottom:.08em') + GROUND, learn: n => `Down! The ${n} is down.`, q: n => `Which ${n} is down?` } ],
-  [ { c: 'on', art: e => T('bottom:0') + A(e, 'font-size:.55em;bottom:.92em'), learn: n => `On! The ${n} is on the table.`, q: n => `Where is the ${n} on the table?` },
+  [ { c: 'on', art: e => T('bottom:0') + A(e, 'font-size:.55em;bottom:62%'), learn: n => `On! The ${n} is on the table.`, q: n => `Where is the ${n} on the table?` },
     { c: 'under', art: e => T('bottom:0') + A(e, 'font-size:.5em;bottom:.04em'), learn: n => `Under! The ${n} is under the table.`, q: n => `Where is the ${n} under the table?` } ],
-  [ { c: 'in', art: e => A('📦', 'font-size:.95em;bottom:0') + A(e, 'font-size:.5em;bottom:.42em'), learn: n => `In! The ${n} is in the box.`, q: n => `Where is the ${n} in the box?` },
-    { c: 'out', art: e => A('📦', 'font-size:.8em;bottom:0;left:32%') + A(e, 'font-size:.55em;bottom:0;left:80%'), learn: n => `Out! The ${n} is out of the box.`, q: n => `Where is the ${n} out of the box?` } ],
+  [ { c: 'in', art: e => B('bottom:0') + A(e, 'font-size:.5em;bottom:30%'), learn: n => `In! The ${n} is in the box.`, q: n => `Where is the ${n} in the box?` },
+    { c: 'out', art: e => B('bottom:0;left:34%;width:1em') + A(e, 'font-size:.55em;bottom:0;left:82%'), learn: n => `Out! The ${n} is out of the box.`, q: n => `Where is the ${n} out of the box?` } ],
   [ { c: 'front', w: 'in front of', art: e => A('🌳', 'font-size:1.15em;bottom:0') + A(e, 'font-size:.6em;bottom:0'), learn: n => `In front of! The ${n} is in front of the tree.`, q: n => `Where is the ${n} in front of the tree?` },
     { c: 'behind', art: e => A(e, 'font-size:.5em;bottom:.7em;left:77%') + A('🌳', 'font-size:1.15em;bottom:0;left:46%'), learn: n => `Behind! The ${n} is behind the tree.`, q: n => `Where is the ${n} behind the tree?` },
     { c: 'nextto', w: 'next to', art: e => A('🌳', 'font-size:1em;bottom:0;left:36%') + A(e, 'font-size:.55em;bottom:0;left:82%'), learn: n => `Next to! The ${n} is next to the tree.`, q: n => `Where is the ${n} next to the tree?` } ],
@@ -447,29 +457,35 @@ const sfx = {
 };
 
 // ---------- background music ----------
-// An original, gentle tune on a loop. It plays on the home, coloring, gallery and treat screens,
-// and stops while she learns and answers, so the words are clear.
+// An original, dreamy tune on a loop (a slow, hopeful folk song feel): soft melody, banjo-like plucked chords, warm bass.
+// It plays on the home, coloring, gallery and treat screens, and stops while she learns and answers, so the words are clear.
 const Music = (() => {
   const N = n => 261.63 * Math.pow(2, n / 12); // semitones from middle C
+  // One bar = 4 beats. Chords as semitones from middle C.
+  const CHORDS = [[0, 4, 7, 11], [-3, 0, 4, 7], [2, 5, 9, 12], [-5, 2, 5, 11], [5, 9, 12, 16], [4, 7, 11, 14], [2, 5, 9, 12], [-5, 2, 7, 11]];
+  const ROOT = [-24, -15, -22, -17, -19, -20, -22, -17];
   // [note, beats]; null is a rest
-  const MEL = [[4,1],[7,1],[9,1],[7,1],[4,1],[2,1],[0,2],[2,1],[4,1],[7,1],[4,1],[2,4],
-               [4,1],[7,1],[9,1],[12,1],[9,1],[7,1],[4,2],[2,1],[4,1],[2,1],[-1,1],[0,4]];
-  const BASS = [[-12,4],[-12,4],[-17,4],[-17,4],[-15,4],[-20,4],[-17,4],[-12,4]];
-  const BEAT = 0.42;
+  const MEL = [[4, 1.5], [7, .5], [12, 1], [11, 1], [9, 2], [7, 1], [4, 1], [5, 1.5], [9, .5], [14, 1], [12, 1], [11, 3], [null, 1],
+               [9, 1.5], [12, .5], [16, 1], [14, 1], [11, 2], [7, 1], [4, 1], [2, 1], [5, 1], [9, 1], [7, 1], [7, 2], [null, 2]];
+  const PLUCK = [0, 1, 2, 3, 2, 1, 2, 3];
+  const BEAT = 0.6;
   let timer = null, t0 = 0, loopLen = 0;
-  const note = (f, at, dur, type, vol) => {
+  const note = (f, at, dur, type, vol, attack = 0.03) => {
     const o = ac.createOscillator(), g = ac.createGain();
     o.type = type; o.frequency.value = f;
-    g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(vol, at + 0.03); g.gain.exponentialRampToValueAtTime(0.0005, at + dur * 0.95);
+    g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(vol, at + attack); g.gain.exponentialRampToValueAtTime(0.0005, at + dur * 0.95);
     o.connect(g).connect(bus); o.start(at); o.stop(at + dur);
   };
   let bus = null;
   function scheduleLoop(start) {
     let t = start;
-    MEL.forEach(([n, b]) => { if (n !== null) note(N(n), t, b * BEAT, 'triangle', 0.045); t += b * BEAT; });
-    t = start;
-    BASS.forEach(([n, b]) => { note(N(n), t, b * BEAT, 'sine', 0.05); t += b * BEAT; });
-    loopLen = MEL.reduce((a, [, b]) => a + b, 0) * BEAT;
+    MEL.forEach(([n, b]) => { if (n !== null) note(N(n + 12), t, b * BEAT * 1.1, 'sine', 0.05, 0.06); t += b * BEAT; });
+    CHORDS.forEach((ch, bar) => {
+      const at = start + bar * 4 * BEAT;
+      PLUCK.forEach((k, i) => note(N(ch[k]), at + i * BEAT / 2, 0.5, 'triangle', 0.028, 0.004));
+      note(N(ROOT[bar]), at, 2 * BEAT, 'sine', 0.06); note(N(ROOT[bar] + 7), at + 2 * BEAT, 2 * BEAT, 'sine', 0.045);
+    });
+    loopLen = CHORDS.length * 4 * BEAT;
   }
   return {
     on() {
@@ -585,10 +601,14 @@ let onSync = null;
 const Sync = (() => {
   const config = window.FIREBASE_CONFIG || null;
   const SDK = 'https://www.gstatic.com/firebasejs/10.14.1/';
-  const FAM = 'vocab-city-family'; // shared with the siblings' app on the same phone
+  // Blue Pup keeps its own family code; at first it borrows the siblings' app code (עיר המילים) from the same phone.
+  // Changing it here never changes the siblings' app.
+  const FAM = 'blue-pup-family', CITY = 'vocab-city-family', LAST = 'blue-pup-last-sync';
   let db = null, uid = null, ready = null, listening = false, timer = null;
-  const family = () => { try { return localStorage.getItem(FAM); } catch (e) { return null; } };
+  const family = () => { try { return localStorage.getItem(FAM) || localStorage.getItem(CITY); } catch (e) { return null; } };
   const setFamily = c => { try { localStorage.setItem(FAM, c); } catch (e) {} };
+  const synced = () => { try { localStorage.setItem(LAST, Date.now()); } catch (e) {} };
+  const lastSync = () => { try { return +localStorage.getItem(LAST) || 0; } catch (e) { return 0; } };
   const load = src => new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = rej; document.head.appendChild(el); });
   const changed = () => { if (onSync) onSync(); };
   function start() {
@@ -631,6 +651,7 @@ const Sync = (() => {
   function listen() {
     if (listening) return; listening = true;
     fam().collection('data').doc('little').onSnapshot(snap => {
+      synced();
       if (snap.exists && merge(JSON.parse(snap.data().json))) changed();
     }, () => {});
     fam().collection('data').where('kind', '==', 'little-clip').onSnapshot(qs => qs.docChanges().forEach(ch => {
@@ -652,6 +673,7 @@ const Sync = (() => {
           if (snap.exists && merge(JSON.parse(snap.data().json))) changed();
           tx.set(ref, { json: JSON.stringify({ words: S.words, desserts: S.desserts, rounds: S.rounds || 0, stars: S.stars || 0 }), t: Date.now() });
         });
+        synced();
       } catch (e) { timer = setTimeout(push, 15000); }
     }, 2500);
   }
@@ -686,11 +708,14 @@ const Sync = (() => {
   }
   window.addEventListener('online', () => { if (config && family()) start().then(() => { listen(); push(); }).catch(() => {}); });
   return {
-    available: !!config, family, push, uploadClip, deleteClip,
+    available: !!config, family, lastSync, push, uploadClip, deleteClip,
     async joinFamily(raw) {
       const code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
       if (code.length !== 8) throw new Error('bad code');
-      await start(); return join(code);
+      const switching = listening && code !== family();
+      await start(); await join(code);
+      if (switching) { push(); setTimeout(() => location.reload(), 3000); } // start listening to the new family
+      return code;
     },
     async createFamily() {
       await start();
@@ -735,11 +760,51 @@ function pup(cls = '') {
 const FLAVORS = [['strawberry', '#ff9fc4', '🍓'], ['chocolate', '#a8694b', '🍫'], ['vanilla', '#fff0c2', '🤍'],
   ['blueberry', '#7db7ff', '🫐'], ['mint', '#9fe6c6', '🌿'], ['banana', '#ffe27a', '🍌']];
 const BLANK = '#eef3f8';
-const KINDS = { cone: 'ice cream', cake: 'cake', cupcake: 'cupcake' };
+const KINDS = { cone: 'ice cream', burger: 'burger', cake: 'cake', pizza: 'pizza', cupcake: 'cupcake' };
+// Burgers and pizzas are built from foods instead of flavors; their layers are stored as the food's emoji.
+const FOODS = {
+  burger: [['meat', '#7a4a2a', '🍖'], ['cheese', '#ffc93c', '🧀'], ['lettuce', '#5cc13b', '🥬'], ['tomato', '#ef4b3f', '🍅'],
+    ['onion', '#e6c3ee', '🧅'], ['pickle', '#7ca33a', '🥒'], ['egg', '#fff3c4', '🍳']],
+  pizza: [['cheese', '#ffd75e', '🧀'], ['tomato', '#ef4b3f', '🍅'], ['mushroom', '#cdb79e', '🍄'], ['olive', '#2d2d2d', '🫒'],
+    ['pepper', '#3fae49', '🫑'], ['corn', '#ffd400', '🌽'], ['pineapple', '#ffd94d', '🍍']],
+};
+const TOPS = { burger: ['🚩', '⭐', '🧀', '🥒'], pizza: ['🌿', '⭐', '🌶️', '🧀'] };
+const foodColor = e => { for (const k in FOODS) { const f = FOODS[k].find(x => x[2] === e); if (f) return f[1]; } return '#d9c2a3'; };
 function treat(kind, layers, top) {
   if (kind === 'cake') return cake(layers, top);
   if (kind === 'cupcake') return cupcake(layers, top);
+  if (kind === 'burger') return burger(layers, top);
+  if (kind === 'pizza') return pizza(layers, top);
   return cone(layers, top);
+}
+function burger(layers, top) {
+  const n = layers.length, H = 60 + n * 16 + (top ? 76 : 6);
+  let s = `<svg viewBox="0 0 160 ${H}" aria-hidden="true">`;
+  s += `<path d="M24 ${H - 30} H136 Q136 ${H - 6} 112 ${H - 6} H48 Q24 ${H - 6} 24 ${H - 30} Z" fill="#e9a24f" stroke="#b9772f" stroke-width="2.5"/>`;
+  layers.forEach((e, i) => {
+    const y = H - 30 - (i + 1) * 16, c = e === BLANK ? BLANK : foodColor(e);
+    if (e === '🥬') s += `<path d="M16 ${y + 12} q8 -10 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 v4 H16 Z" fill="${c}" stroke="rgba(0,0,0,.15)" stroke-width="2"/>`;
+    else if (e === '🧀') s += `<path d="M20 ${y + 2} H140 L132 ${y + 14} L120 ${y + 6} L104 ${y + 16} L92 ${y + 6} H20 Z" fill="${c}" stroke="rgba(0,0,0,.15)" stroke-width="2"/>`;
+    else s += `<rect x="${e === '🍖' ? 18 : 24}" y="${y + 1}" width="${e === '🍖' ? 124 : 112}" height="14" rx="7" fill="${c}" stroke="rgba(0,0,0,.15)" stroke-width="2"/>`;
+  });
+  if (top) {
+    const y = H - 30 - n * 16;
+    s += `<path d="M24 ${y} Q24 ${y - 40} 80 ${y - 40} Q136 ${y - 40} 136 ${y} Z" fill="#e9a24f" stroke="#b9772f" stroke-width="2.5"/>`;
+    s += [[56, 14], [80, 24], [104, 14], [68, 30], [94, 31]].map(([x, d]) => `<ellipse cx="${x}" cy="${y - d}" rx="3.5" ry="2" fill="#fff6dc"/>`).join('');
+    s += `<text x="80" y="${y - 38}" font-size="30" text-anchor="middle">${top}</text>`;
+  }
+  return s + '</svg>';
+}
+function pizza(layers, top) {
+  const spots = [[60, 54], [100, 50], [80, 82], [52, 96], [108, 92], [80, 118], [62, 130], [104, 128], [80, 40], [40, 72], [122, 72]];
+  let s = `<svg viewBox="0 0 160 170" aria-hidden="true"><circle cx="80" cy="86" r="76" fill="#e9b56b" stroke="#c48a3c" stroke-width="3"/>
+    <circle cx="80" cy="86" r="64" fill="#e2553f"/><circle cx="80" cy="86" r="58" fill="${layers.length ? '#ffe08a' : '#e2553f'}"/>`;
+  layers.forEach((e, i) => {
+    if (e === BLANK) { s += `<circle cx="${spots[i % 11][0]}" cy="${spots[i % 11][1]}" r="9" fill="#fff" opacity=".6"/>`; return; }
+    for (let j = 0; j < 3; j++) { const [x, y] = spots[(i * 3 + j * 4) % 11]; s += `<text x="${x}" y="${y + 7}" font-size="18" text-anchor="middle">${e}</text>`; }
+  });
+  if (top) s += `<text x="80" y="98" font-size="34" text-anchor="middle">${top}</text>`;
+  return s + '</svg>';
 }
 function cake(layers, top) {
   const n = layers.length, H = 40 + n * 26 + (top ? 40 : 10);
@@ -818,7 +883,7 @@ function home() {
   }).join('');
   // Her ice cream gallery sits in the top corner, apart from the categories.
   app.innerHTML = `<div class="bar"><button class="round-btn cones-btn" data-go="gallery" aria-label="my ice creams">${ICON.cones}${S.desserts.length ? `<b>${S.desserts.length}</b>` : ''}</button>
-      <div class="grow">${starBadge()}</div>
+      <div class="grow"><button class="star-count words-btn" data-go="words" aria-label="my words">⭐ ${knownWords().length}</button></div>
       <button class="round-btn gear" id="gear" aria-label="parents (press and hold)">${ICON.gear}</button></div>` +
     `<div class="stage home-stage"><div class="home-scroll"><div class="cats">${tiles}
 </div></div></div>`;
@@ -856,7 +921,7 @@ function startRound(catId) {
   for (const w of fresh) if (set.length < 4 - reserve) set.push(w);
   for (const w of known.concat(learning, fresh)) if (set.length < 4 && !set.includes(w)) set.push(w);
   const teach = set.filter(w => status(w.id) !== 'known');
-  round = { cat: c, words, set, teach: teach.length ? teach : set, i: 0, scoops: [], concepts: [], kind: Object.keys(KINDS)[S.desserts.filter(d => d.k !== 'paint').length % 3] };
+  round = { cat: c, words, set, teach: teach.length ? teach : set, i: 0, scoops: [], concepts: [], kind: Object.keys(KINDS)[S.desserts.filter(d => d.k !== 'paint').length % 5] };
   // Concept practice on a word she already knows, or else one she meets in this round.
   const known2 = words.filter(w => w.e && !w.own && (S.words[w.id] || {}).box >= 2);
   const obj = CONCEPT_CATS.includes(c.id) && shuffle(known2.length ? known2 : set.filter(w => w.e && !w.own))[0];
@@ -865,9 +930,7 @@ function startRound(catId) {
     if (mastered(c) && Math.random() < 0.5) {
       round.concepts = adjWords(obj); // the category is well known: practise colors on it
     } else {
-      const groupKnown = g => g.every(v => status('concept:' + v.c) === 'known');
-      let open = 0; while (open < CONCEPTS.length - 1 && groupKnown(CONCEPTS[open])) open++;
-      const gi = groupKnown(CONCEPTS[open]) || Math.random() < 0.3 ? Math.floor(Math.random() * (open + 1)) : open;
+      const gi = S.cg = ((S.cg === undefined ? -1 : S.cg) + 1) % CONCEPTS.length; // each round a different place word set
       round.concepts = CONCEPTS[gi].map(v => conceptWord(v, obj));
       if (['updown', 'table', 'box'].includes(CONCEPT_KEYS[gi])) round.drag = CONCEPT_KEYS[gi];
     }
@@ -963,15 +1026,15 @@ function quizStep() {
 const DRAG = {
   up: { start: [.5, .55], ok: (x, y) => y < .33, snap: [.5, .14], say: n => `Move the ${n} up!` },
   down: { start: [.5, .45], ok: (x, y) => y > .67, snap: [.5, .84], say: n => `Move the ${n} down!` },
-  on: { start: [.12, .86], ok: (x, y) => x > .18 && x < .82 && y < .5, snap: [.5, .38], say: n => `Put the ${n} on the table!` },
+  on: { start: [.12, .86], ok: (x, y) => x > .18 && x < .82 && y < .5, snap: [.5, .355], say: n => `Put the ${n} on the table!` },
   under: { start: [.12, .18], ok: (x, y) => x > .22 && x < .78 && y > .56, snap: [.5, .8], say: n => `Put the ${n} under the table!` },
-  in: { start: [.15, .2], ok: (x, y) => Math.hypot(x - .5, y - .76) < .22, snap: [.5, .64], say: n => `Put the ${n} in the box!` },
-  out: { start: [.5, .64], ok: (x, y) => Math.hypot(x - .5, y - .76) > .28, snap: null, say: n => `Take the ${n} out of the box!` },
+  in: { start: [.15, .2], ok: (x, y) => Math.hypot(x - .5, y - .62) < .22, snap: [.5, .62], say: n => `Put the ${n} in the box!` },
+  out: { start: [.5, .62], ok: (x, y) => Math.hypot(x - .5, y - .62) > .3, snap: null, say: n => `Take the ${n} out of the box!` },
 };
 const SCENES = {
   updown: '<span class="cloud">☁️</span><i class="floor"></i>',
   table: `<span class="table">${TABLE}</span><i class="floor"></i>`,
-  box: '<span class="box">📦</span><i class="floor"></i>',
+  box: `<i class="floor"></i><span class="box">${BOX}</span>`,
 };
 function putIt() {
   sky.innerHTML = '';
@@ -1063,22 +1126,23 @@ function sayIt() {
 function dessert() {
   sky.innerHTML = '';
   sfx.fanfare();
-  const kind = round.kind, max = Math.max(1, Math.min(round.scoops.length, kind === 'cake' ? 5 : 8)), layers = [];
+  const kind = round.kind, max = Math.max(1, Math.min(round.scoops.length, kind === 'cake' ? 5 : kind === 'burger' ? 6 : 7)), layers = [];
+  const opts = FOODS[kind] || FLAVORS;
   const name = KINDS[kind];
   app.innerHTML = bar(`<div class="dots" id="left"></div>`) + `<div class="stage"><div class="cone-big" id="cone">${treat(kind, layers)}</div>
-    <div class="tops" id="tops">${FLAVORS.map(([n, c, e], i) => `<button class="top-btn flavor" data-f="${i}" style="--c:${c}" aria-label="${n}">${e}</button>`).join('')}</div></div>`;
+    <div class="tops" id="tops">${opts.map(([n, c, e], i) => `<button class="top-btn flavor" data-f="${i}" style="--c:${c}" aria-label="${n}">${e}</button>`).join('')}</div></div>`;
   const left = () => { document.getElementById('left').innerHTML = Array.from({ length: max }, (_, i) => `<i class="${i < layers.length ? 'on' : ''}"></i>`).join(''); };
   left();
-  say(`Let's make ${kind === 'cone' ? 'ice cream' : 'a ' + name}! Pick a flavor!`);
+  say(`Let's make ${kind === 'cone' ? 'ice cream' : 'a ' + name}! ${FOODS[kind] ? 'What goes on it?' : 'Pick a flavor!'}`);
   app.querySelectorAll('.flavor').forEach(b => b.onclick = () => {
     if (layers.length >= max) return;
-    const [n, c] = FLAVORS[+b.dataset.f];
-    layers.push(c); sfx.scoop(); say(cap(n) + '!');
+    const [n, c, e] = opts[+b.dataset.f];
+    layers.push(FOODS[kind] ? e : c); sfx.scoop(); say(cap(n) + '!');
     document.getElementById('cone').innerHTML = treat(kind, layers); left();
     if (layers.length === max) setTimeout(toppings, 700);
   });
   function toppings() {
-    document.getElementById('tops').innerHTML = ['🍓', '🍪', '🦄', '🌈', '🍒', '⭐'].map(t => `<button class="top-btn" data-t="${t}" aria-label="topping">${t}</button>`).join('');
+    document.getElementById('tops').innerHTML = (TOPS[kind] || ['🍓', '🍪', '🦄', '🌈', '🍒', '⭐']).map(t => `<button class="top-btn" data-t="${t}" aria-label="topping">${t}</button>`).join('');
     say('Now pick a topping!');
     app.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
       const t = b.dataset.t;
@@ -1090,6 +1154,21 @@ function dessert() {
       document.getElementById('done').onclick = afterPrize;
     });
   }
+}
+
+// Her sticker book: every word she really knows, as a golden sticker. Tapping one says it.
+const knownWords = () => Object.values(WORD).filter(w => status(w.id) === 'known');
+function myWords() {
+  Music.on(); onSync = myWords;
+  const ws = knownWords();
+  app.innerHTML = bar(`<span class="star-count">⭐ ${ws.length}</span>`) + `<div class="stage home-stage"><div class="home-scroll">${ws.length
+    ? `<div class="stickers">${ws.map(w => `<button class="sticker" data-w="${w.id}" aria-label="${w.w}">${pic(w)}</button>`).join('')}</div>`
+    : `<div class="stage">${pup()}</div>`}</div></div>`;
+  say(ws.length ? `You know ${ws.length} ${ws.length === 1 ? 'word' : 'words'}! Wow!` : "Let's learn new words!");
+  app.querySelectorAll('[data-w]').forEach(b => b.onclick = () => {
+    const w = WORD[b.dataset.w]; b.classList.remove('hop'); void b.offsetWidth; b.classList.add('hop');
+    say(cap(w.w) + '!');
+  });
 }
 
 function gallery() {
@@ -1263,11 +1342,11 @@ function party() {
 }
 
 // ---------- bedtime ----------
-// After about S.bedMin minutes of play (default 5), the next finished prize leads to the night sky
+// After about S.bedMin minutes of play (default 4), the next finished prize leads to the night sky
 // instead of home: the moon rises, the child goes to bed, "Good night!". A parent holds the moon to play again.
 let playMs = 0;
 setInterval(() => { if (document.visibilityState === 'visible' && !document.querySelector('.night')) playMs += 5000; }, 5000);
-const bedMin = () => S.bedMin === undefined ? 5 : S.bedMin;
+const bedMin = () => S.bedMin === undefined || S.bedMin === 5 ? 4 : S.bedMin; // 5 was the old default
 function afterPrize() { if (bedMin() && playMs >= bedMin() * 60000) goodnight(); else home(); }
 function goodnight() {
   stopAll(); Music.off(); onSync = null; sky.innerHTML = '';
@@ -1301,7 +1380,7 @@ function parents() {
   el.className = 'sheet';
   el.innerHTML = `<div class="sheet-in"><h2>אזור הורים</h2>
     <p>מילים שהיא יודעת: ${known} מתוך ${total}. מילה נחשבת ידועה אחרי 3 תשובות נכונות בניסיון ראשון. צהוב = יודעת, כחול = בלמידה, אפור = עוד לא ראתה.</p>
-    <h3>מילות יחס</h3><p>מתורגלות בתוך הקטגוריות, על מילים שהיא כבר יודעת: גדול/קטן, למעלה/למטה, על/מתחת לשולחן, בתוך/מחוץ לקופסה, לפני/מאחורי/ליד העץ. כל קבוצה נפתחת כשהקודמת ידועה. חלקן גם במשחק גרירה.</p>
+    <h3>מילות יחס</h3><p>מתורגלות בתוך הקטגוריות, על מילים שהיא כבר יודעת: גדול/קטן, למעלה/למטה, על/מתחת לשולחן, בתוך/מחוץ לקופסה, לפני/מאחורי/ליד העץ. בכל סבב קבוצה אחרת. חלקן גם במשחק גרירה.</p>
     <div class="chips">${CONCEPTS.flat().map(v => `<span class="chip ${status('concept:' + v.c)}">${v.w || v.c}</span>`).join('')}</div>
     <h3>צבעים על תמונה ("the blue dog")</h3><p>נפתח בקטגוריה שהיא יודעת בה את רוב המילים.</p>
     <div class="chips">${Object.keys(TINT).map(col => `<span class="chip ${status('adj:' + col)}">${col}</span>`).join('')}</div>
@@ -1309,7 +1388,7 @@ function parents() {
     <h3>הקראה</h3><div class="row"><button class="pbtn ${S.slow ? 'on' : ''}" data-slow="1">איטית</button><button class="pbtn ${S.slow ? '' : 'on'}" data-slow="0">רגילה</button>
 </div>
     <h3>לילה טוב</h3><p>אחרי זמן המשחק, בסוף הסבב, עולים ירח וכוכבים והילדה הולכת לישון. כדי לשחק שוב: לחיצה ארוכה על הירח. מי שנכנס שוב בתוך שעה חוזר לירח.</p>
-    <div class="row">${[5, 10, 15, 0].map(m => `<button class="pbtn ${bedMin() === m ? 'on' : ''}" data-bed="${m}">${m ? m + ' דקות' : 'כבוי'}</button>`).join('')}</div>
+    <div class="row">${[4, 6, 10, 0].map(m => `<button class="pbtn ${bedMin() === m ? 'on' : ''}" data-bed="${m}">${m ? m + ' דקות' : 'כבוי'}</button>`).join('')}</div>
     <h3>מוזיקת רקע</h3><div class="row"><button class="pbtn ${S.music !== false ? 'on' : ''}" data-music="1">פועלת</button><button class="pbtn ${S.music === false ? 'on' : ''}" data-music="0">כבויה</button></div>
     <h3>הקול</h3><p>לחיצה על קול משמיעה אותו ובוחרת בו. הקולות הטבעיים יותר מופיעים ראשונים. ההקלטות שלכם תמיד יתנגנו במקומו.</p>
     <div class="chips" id="voices"></div>
@@ -1318,7 +1397,10 @@ function parents() {
     <h3>הקלטות</h3><p>אתם יכולים להקליט את המילים ואת החיזוקים בקול שלכם, וגם את ה-"Hello" שבכניסה.</p>
     <div class="row"><button class="pbtn on" id="recs">🎙 להקלטות</button></div>
     ${Sync.available ? `<h3>סנכרון בין הטלפונים</h3>${Sync.family()
-      ? `<p>הטלפון מחובר למשפחה, וההתקדמות וההקלטות מסתנכרנות. קוד המשפחה: <b dir="ltr">${Sync.family()}</b>. בטלפון השני פותחים את אזור ההורים ומקלידים את אותו הקוד.</p>`
+      ? `<p>הטלפון מחובר למשפחה, וההתקדמות וההקלטות מסתנכרנות. קוד המשפחה: <b dir="ltr">${Sync.family()}</b>. בטלפון השני פותחים את אזור ההורים ומקלידים את אותו הקוד.</p>
+        <p>${Sync.lastSync() ? 'סנכרון אחרון: ' + new Date(Sync.lastSync()).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'עוד לא היה סנכרון. בדקו שיש אינטרנט.'}</p>
+        <p>הקוד צריך להיות זהה בשני הטלפונים. אם כאן מופיע קוד אחר, מקלידים את הקוד הנכון:</p>
+        <div class="row"><input id="famcode" dir="ltr" maxlength="9" placeholder="ABCD2345" autocomplete="off"><button class="pbtn on" id="join">החלפה</button></div>`
       : `<p>כדי שההתקדמות וההקלטות יהיו זהות בשני הטלפונים: בטלפון הראשון לוחצים "משפחה חדשה", ובטלפון השני מקלידים את הקוד שמופיע. אם יש לכם כבר קוד משפחה מעיר המילים, אפשר להשתמש בו.</p>
         <div class="row"><input id="famcode" dir="ltr" maxlength="9" placeholder="ABCD2345" autocomplete="off"><button class="pbtn on" id="join">חיבור</button><button class="pbtn" id="create">משפחה חדשה</button></div>`}
       <p class="warn" id="syncmsg"></p>` : ''}
@@ -1347,7 +1429,7 @@ function parents() {
   const syncMsg = t => { const m = el.querySelector('#syncmsg'); if (m) m.textContent = t; };
   const joined = () => { el.remove(); parents(); };
   const jb = el.querySelector('#join'), cb = el.querySelector('#create');
-  if (jb) jb.onclick = () => { syncMsg('מתחבר...'); Sync.joinFamily(el.querySelector('#famcode').value).then(joined).catch(() => syncMsg('הקוד לא נכון או שאין אינטרנט. קוד המשפחה הוא 8 תווים.')); };
+  if (jb) jb.onclick = () => { syncMsg('מתחבר...'); Sync.joinFamily(el.querySelector('#famcode').value).then(() => { syncMsg('מחובר! מסנכרן...'); setTimeout(joined, 1500); }).catch(() => syncMsg('הקוד לא נכון או שאין אינטרנט. קוד המשפחה הוא 8 תווים.')); };
   if (cb) cb.onclick = () => { syncMsg('יוצר משפחה...'); Sync.createFamily().then(joined).catch(() => syncMsg('לא הצלחתי ליצור משפחה. בדקו שיש אינטרנט ונסו שוב.')); };
   el.onclick = e => { if (e.target === el) { el.remove(); home(); } };
   const reset = el.querySelector('#reset');
@@ -1414,7 +1496,7 @@ function recordings() {
 
 app.addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (!g) return;
-  if (g.dataset.go === 'home') home(); else if (g.dataset.go === 'gallery') gallery();
+  if (g.dataset.go === 'home') home(); else if (g.dataset.go === 'gallery') gallery(); else if (g.dataset.go === 'words') myWords();
 });
 if ('serviceWorker' in navigator && /github\.io$/.test(location.hostname)) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
