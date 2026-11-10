@@ -257,6 +257,7 @@ button.chip { font: inherit; font-size: 14px; }
 .sheet input#kidname { width: 10em; text-transform: none; letter-spacing: 0; }
 .sheet input { font: inherit; font-size: 16px; padding: 9px 12px; border-radius: 12px; border: 2px solid var(--card-edge); width: 9em; letter-spacing: .08em; text-transform: uppercase; user-select: text; -webkit-user-select: text; }
 .warn:empty { display: none; }
+.sheet-in > .warn { position: sticky; top: -18px; background: #fff0f3; padding: 8px 12px; border-radius: 12px; z-index: 2; }
 .pbtn.danger { background: #ffe1e8; color: #a1123a; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
 </style>
@@ -490,7 +491,7 @@ const Music = (() => {
 
 // ---------- family recordings (kept on this phone, in IndexedDB) ----------
 // Keys: learn:<word id>, q:<word id>, praise:<time>. A word without a recording uses the phone's voice.
-const clips = new Set(), decoded = {};
+const clips = new Set();
 let dbp = null, current = null;
 function db() {
   return dbp || (dbp = new Promise((res, rej) => {
@@ -509,59 +510,68 @@ function idb(mode, fn) {
 }
 idb('readonly', st => st.getAllKeys()).then(keys => (keys || []).forEach(k => clips.add(k))).catch(() => {});
 function putClip(key, blob, t) {
-  delete decoded[key];
   return idb('readwrite', st => st.put(blob, key)).then(() => {
     clips.add(key); (S.clipT || (S.clipT = {}))[key] = t || Date.now(); saveLocal();
     if (!t) Sync.uploadClip(key, blob); // a new recording on this phone goes to the other phone too
   });
 }
 function delClip(key, fromRemote) {
-  delete decoded[key];
   return idb('readwrite', st => st.delete(key)).then(() => { clips.delete(key); if (!fromRemote) Sync.deleteClip(key); });
 }
 function stopAll() {
   try { speechSynthesis.cancel(); } catch (e) {}
   if (current) { try { current.stop(); } catch (e) {} current = null; }
 }
-function playClip(key, then) {
+// Recordings play through an <audio> element (what phones play most reliably), falling back to WebAudio.
+function playBlob(blob, then) {
   let fired = false;
   const after = () => { if (!fired) { fired = true; if (then) then(); } };
-  try {
-    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
-    if (ac.state === 'suspended') ac.resume();
-  } catch (e) { return after(); }
-  const go = buf => {
-    stopAll();
-    const src = ac.createBufferSource(); src.buffer = buf; src.connect(ac.destination);
-    src.onended = after; src.start(); current = src;
-  };
-  if (decoded[key]) return go(decoded[key]);
-  idb('readonly', st => st.get(key)).then(b => b.arrayBuffer())
-    .then(ab => new Promise((res, rej) => ac.decodeAudioData(ab, res, rej)))
-    .then(buf => { decoded[key] = buf; go(buf); }).catch(after);
+  stopAll();
+  const url = URL.createObjectURL(blob), a = new Audio(url);
+  const done = () => { URL.revokeObjectURL(url); after(); };
+  a.onended = done;
+  current = { stop: () => { a.pause(); done(); } };
+  a.play().catch(() => {
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === 'suspended') ac.resume();
+      blob.arrayBuffer().then(ab => new Promise((res, rej) => ac.decodeAudioData(ab, res, rej))).then(buf => {
+        const src = ac.createBufferSource(); src.buffer = buf; src.connect(ac.destination);
+        src.onended = done; src.start(); current = src;
+      }).catch(done);
+    } catch (e) { done(); }
+  });
 }
-function playBlob(blob, then) {
-  try {
-    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
-    if (ac.state === 'suspended') ac.resume();
-    blob.arrayBuffer().then(ab => new Promise((res, rej) => ac.decodeAudioData(ab, res, rej))).then(buf => {
-      stopAll();
-      const src = ac.createBufferSource(); src.buffer = buf; src.connect(ac.destination);
-      src.onended = then; src.start(); current = src;
-    }).catch(then);
-  } catch (e) { then(); }
+function playClip(key, then) {
+  idb('readonly', st => st.get(key)).then(b => { if (b && b.size) playBlob(b, then); else if (then) then(); }).catch(() => { if (then) then(); });
 }
 function speak(key, text, then) { if (clips.has(key)) playClip(key, then); else say(text, then); }
-function praise(fallback) {
-  const mine = [...clips].filter(k => k.startsWith('praise:'));
-  if (mine.length) playClip(pick(mine)); else say(fallback);
+// Praise varies: a parent's recording about half the time, otherwise one of many phrases, never the same twice in a row.
+const PRAISE = ['Well done!', 'Great job!', 'Amazing!', 'You did it!', 'Super!', 'Wonderful!', 'Yes!', 'Hooray!', 'Fantastic!', 'Good thinking!', 'Brilliant!', 'Way to go!'];
+let lastPraise = '';
+function praise(word) {
+  const mine = [...clips].filter(k => k.startsWith('praise:') && k !== lastPraise);
+  if (mine.length && Math.random() < 0.5) { lastPraise = pick(mine); return playClip(lastPraise); }
+  const p = pick(PRAISE.filter(x => x !== lastPraise)); lastPraise = p;
+  say(p + (word ? ' ' + cap(word) + '!' : ''));
+}
+// Why a recording failed, in words a parent can act on.
+function recError(e) {
+  const n = e && e.name;
+  if (n === 'NotAllowedError' || n === 'SecurityError') return 'הטלפון לא נותן גישה למיקרופון. ב־Chrome: לוחצים על הסמל שליד הכתובת למעלה, "הרשאות", ומאפשרים מיקרופון. אחר כך סוגרים ופותחים את האפליקציה.';
+  if (n === 'NotFoundError') return 'לא נמצא מיקרופון בטלפון.';
+  if (n === 'NotReadableError') return 'אפליקציה אחרת משתמשת עכשיו במיקרופון (למשל שיחה או הקלטה). סוגרים אותה ומנסים שוב.';
+  if (n === 'NoRecorder' || n === 'NotSupportedError') return 'הדפדפן הזה לא יודע להקליט. פותחים את האפליקציה ב־Chrome.';
+  return 'ההקלטה לא הצליחה (' + (n || (e && e.message) || 'שגיאה') + ').';
 }
 function startRec(onDone, maxMs = 8000) {
-  return navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-    const mr = new MediaRecorder(stream), chunks = [];
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) return Promise.reject({ name: 'NoRecorder' });
+  return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }).then(stream => {
+    const type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+    const mr = type ? new MediaRecorder(stream, { mimeType: type }) : new MediaRecorder(stream), chunks = [];
     mr.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
-    mr.onstop = () => { stream.getTracks().forEach(t => t.stop()); onDone(new Blob(chunks, { type: mr.mimeType || 'audio/webm' })); };
-    mr.start();
+    mr.onstop = () => { stream.getTracks().forEach(t => t.stop()); onDone(new Blob(chunks, { type: mr.mimeType || type || 'audio/webm' })); };
+    mr.start(250); // small slices: some phones hand over nothing without them
     const timer = setTimeout(() => { if (mr.state === 'recording') mr.stop(); }, maxMs);
     return { stop: () => { clearTimeout(timer); if (mr.state === 'recording') mr.stop(); } };
   });
@@ -931,7 +941,7 @@ function quizStep() {
       save();
       sfx.yay(); balloons(misses ? 2 : 4);
       round.scoops.push(BLANK);
-      praise(pick(['Yes!', 'Great job!', 'Hooray!', 'Well done!', 'Good job!']) + ' ' + cap(target.n || target.w) + '!');
+      praise(target.n || target.w);
       setTimeout(() => { sfx.scoop(); const t = app.querySelector('.tracker'); if (t) t.innerHTML = treat(round.kind, round.scoops); }, 350);
       setTimeout(() => { round.qi++; quizStep(); }, 2300);
     } else {
@@ -1004,7 +1014,7 @@ function putIt() {
       if (d.snap) place(d.snap, true);
       if (misses === 0) { r.box = Math.min(r.box + 1, 5); r.right++; S.stars = (S.stars || 0) + 1; flyStar(thing); } else r.wrong++;
       save(); sfx.yay(); balloons(3); round.scoops.push(BLANK);
-      praise(pick(['Yes!', 'Great job!', 'Well done!']) + ' ' + cap(round.concepts.find(w => w.c === c).w) + '!');
+      praise(round.concepts.find(w => w.c === c).w);
       setTimeout(() => { busy = false; k++; step(); }, 2000);
     } else {
       misses++; if (misses === 1) { r.box = Math.max(0, r.box - 1); save(); }
@@ -1036,7 +1046,7 @@ function sayIt() {
   const answer = () => {
     done = true; mic.hidden = true; next.hidden = false;
     sfx.yay(); balloons(4);
-    say(cap(w.w) + '! ' + pick(['Great job!', 'Well done!', 'Hooray!']));
+    say(cap(w.w) + '! ' + pick(PRAISE));
   };
   mic.onclick = () => {
     if (done) return;
@@ -1359,6 +1369,7 @@ function recordings() {
       <span class="slot-btns"><button class="ibtn ${live && live.key === key ? 'rec' : ''}" data-rec="${key}" aria-label="record">${live && live.key === key ? '■' : '🎙'}</button>
       ${clips.has(key) ? `<button class="ibtn" data-play="${key}" aria-label="play">▶</button><button class="ibtn" data-del="${key}" aria-label="delete">🗑</button>` : ''}</span></div>`;
   const draw = () => {
+    const keep = el.firstChild ? el.firstChild.scrollTop : 0; // stay where the parent was in the list
     const c = CATS.find(x => x.id === recCat);
     const praises = [...clips].filter(k => k.startsWith('praise:')).sort();
     const count = cat => cat.words.concat(cat.extra).filter(w => clips.has('learn:' + w.id) || clips.has('q:' + w.id)).length;
@@ -1376,6 +1387,7 @@ function recordings() {
         ${slot('learn:' + w.id, 'לימוד', w.learn + ' ' + cap(w.w) + '!')}
         ${slot('q:' + w.id, 'שאלה', w.q)}</div>`).join('')}
       <div class="row"><button class="pbtn on" id="rclose">סגירה</button></div></div>`;
+    el.firstChild.scrollTop = keep;
   };
   draw(); onSync = () => { if (!live) draw(); };
   el.onclick = e => {
@@ -1392,8 +1404,8 @@ function recordings() {
         live = null;
         if (blob.size < 500) { msg = 'ההקלטה יצאה ריקה. נסו שוב ודברו קרוב לטלפון.'; return draw(); }
         putClip(key, blob).then(() => { draw(); playClip(key); }).catch(() => { msg = 'לא הצלחתי לשמור את ההקלטה.'; draw(); });
-      }).then(r => { live = { key, r }; draw(); }).catch(() => {
-        msg = 'אין גישה למיקרופון. צריך לאשר גישה למיקרופון כשהטלפון שואל. בתצוגה המקדימה של Claude ההקלטה לא עובדת, רק באפליקציה עצמה.';
+      }).then(r => { live = { key, r }; draw(); }).catch(e => {
+        msg = recError(e) + (/claude|usercontent/.test(location.hostname) ? ' בתצוגה המקדימה של Claude ההקלטה לא עובדת, רק באפליקציה עצמה.' : '');
         draw();
       });
     }
