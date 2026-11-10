@@ -1,6 +1,7 @@
 // מעבדת המתמטיקה: a few minutes a day of multiple-choice "do you understand it" questions.
 // Everything is kept on this device (localStorage), separate from the English apps.
 const ROUND = 8;
+const CHAINS = 5; // how many of the round's questions are step-by-step exercises
 const BOX_DAYS = [0, 1, 2, 4, 8, 16, 32]; // Leitner box → days until the question comes back
 const MASTER_BOX = 3;
 const MAX_LEVEL = 3;
@@ -16,8 +17,9 @@ const fresh = () => ({
   recent: [],    // last mistakes: { r: rule, d: day key }
   stars: 0, rounds: 0, perfects: 0, fixes: 0, bestCombo: 0,
   lv: {}, hist: {},
-  hw: {}, hwDay: {}, sheet: {}, // sheet: exercises he ticked as solved alone on a paper sheet, per homework id
-  // homework: done exercises per homework id, and how many were finished each day // difficulty level per subtopic, and its recent first-try results
+  hw: {}, hwDay: {}, sheet: {}, // homework: done exercises and how many per day; sheet: exercises ticked as solved alone on paper
+  coins: 0, coinDays: {}, coinLog: [], work: {}, // coins; per day { n: earned, ms: milestones, visit }; recent earnings; steps answered per day
+  owned: {}, theme: '', redeems: [],              // shop: bought items, active colour theme, parent rewards he redeemed
   trophies: {}, shields: 0, frozen: {}, mute: false,
 });
 let S;
@@ -52,6 +54,41 @@ function useShields() {
   save();
   return missed.length;
 }
+
+// ---------- coins ----------
+// Every right answer or step earns coins, multiplied by the streak bonus (+10% for each day in a row, up to ×2).
+// The daily visit bonus grows with the streak, and the more he does in a day, the bigger the extra bonuses.
+const mult = () => Math.round(10 * Math.min(2, 1 + 0.1 * streak())) / 10;
+const coinDay = () => S.coinDays[today()] || (S.coinDays[today()] = { n: 0, ms: [] });
+function earn(base, why) {
+  const n = Math.max(1, Math.round(base * mult()));
+  S.coins += n; coinDay().n += n;
+  if (why) { S.coinLog.unshift({ d: today(), n, why }); S.coinLog = S.coinLog.slice(0, 40); }
+  return n;
+}
+const MILES = [[10, 10], [25, 20], [50, 40], [100, 80]];
+// One more answered question or step today; returns a milestone bonus when 10/25/50/100 is reached.
+function work() {
+  const t = today(), d = coinDay();
+  S.work[t] = (S.work[t] || 0) + 1;
+  for (const [m, b] of MILES) if (S.work[t] >= m && !d.ms.includes(m)) { d.ms.push(m); return { m, n: earn(b, `${m} תרגילים ושלבים היום`) }; }
+  return null;
+}
+function visitBonus() {
+  const d = coinDay();
+  if (d.visit) return 0;
+  d.visit = true;
+  const n = earn(5 + 3 * Math.min(streak(), 10), 'בונוס כניסה יומית');
+  save();
+  return n;
+}
+function coinToast(html) {
+  const el = document.createElement('div');
+  el.className = 'cointoast'; el.innerHTML = html;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2600);
+}
+const msToast = ms => ms && coinToast(`🎉 <b>${ms.m} תרגילים ושלבים היום!</b> +${ms.n} 🪙`);
 
 // ---------- topics and question choice ----------
 const TOPICS = window.TOPICS;
@@ -99,12 +136,13 @@ function pickRound(mode) {
   }).sort((a, b) => b.k - a.k);
   const out = [], perSub = {};
   const cap = mode === 'all' ? 2 : 3;
-  for (const { x } of keyed) {
+  // Step-by-step exercises first (up to CHAINS of them), then quick questions fill the round.
+  for (const chains of [true, false]) for (const { x } of keyed) {
+    if (!!x.t.chain !== chains || out.length >= (chains ? CHAINS : ROUND)) continue;
     const s = subKey(x.tp, x.t.sub);
     if ((perSub[s] || 0) >= cap) continue;
     perSub[s] = (perSub[s] || 0) + 1;
     out.push(x);
-    if (out.length === ROUND) break;
   }
   for (const { x } of keyed) { if (out.length >= ROUND) break; if (!out.includes(x)) out.push(x); }
   return R.shuffle(out);
@@ -112,7 +150,7 @@ function pickRound(mode) {
 
 // Builds one question; tries again if the random numbers produced duplicate answers.
 function build(t, lvl) {
-  const fine = q => q.tap || q.steps || (q.opts.length >= 2 && new Set(q.opts).size === q.opts.length && (q.opts.length === 4 || q.tf));
+  const fine = q => q.tap || q.steps || (q.chain && q.chain.every(s => s.opts.length === 4 && new Set(s.opts).size === 4)) || (!q.chain && q.opts.length >= 2 && new Set(q.opts).size === q.opts.length && (q.opts.length === 4 || q.tf));
   for (let i = 0; i < 20; i++) {
     const q = t.make(lvl);
     if (fine(q)) return q;
@@ -211,6 +249,7 @@ function weekStrip() {
 
 function home() {
   const used = useShields();
+  const visit = visitBonus();
   const st = streak(), r = rank(), todayDone = done(today());
   const pct = r.next ? Math.round(100 * (S.stars - r.cur[0]) / (r.next[0] - r.cur[0])) : 100;
   const nw = newest();
@@ -218,6 +257,7 @@ function home() {
   app.innerHTML = `
     <header class="top">
       <div class="brand">🧪 מעבדת המתמטיקה</div>
+      <button class="coins" id="wallet" aria-label="הקופה שלי">🪙 <b>${S.coins}</b></button>
       <button class="chip" id="mute" aria-label="צליל">${S.mute ? '🔇' : '🔊'}</button>
     </header>
     <section class="card streak ${todayDone ? 'done' : ''}">
@@ -225,6 +265,7 @@ function home() {
       <div class="streak-text">
         <b>${st ? `${st} ${st === 1 ? 'יום' : 'ימים'} ברצף` : 'מתחילים רצף חדש'}</b>
         <span>${todayDone ? 'המשימה של היום בוצעה ✅ אפשר להמשיך להתאמן כמה שרוצים' : 'המשימה של היום: סבב אחד, 8 שאלות'}</span>
+        <span class="multline">🪙 בונוס רצף ×${mult()}${mult() < 2 ? ` · מחר ×${Math.min(2, Math.round(10 * (mult() + (todayDone ? 0.1 : 0))) / 10)} אם תתרגל היום` : ' (המקסימום!)'}</span>
         ${S.shields ? `<span class="shield">🛡️ × ${S.shields} מגן רצף</span>` : ''}
         ${used ? `<span class="shield">מגן רצף שמר על הרצף שלך 🛡️</span>` : ''}
       </div>
@@ -264,6 +305,8 @@ function home() {
   app.querySelectorAll('[data-hw]').forEach(b => b.onclick = () => hwList(window.HOMEWORK.find(h => h.id === b.dataset.hw)));
   app.querySelectorAll('[data-go]').forEach(b => b.onclick = () => ({ trophies, status, rules })[b.dataset.go]());
   $('#mute').onclick = () => { S.mute = !S.mute; save(); home(); };
+  $('#wallet').onclick = wallet;
+  if (visit) coinToast(`👋 <b>בונוס כניסה יומית: +${visit} 🪙</b><small>ככל שהרצף ארוך יותר, הבונוס גדול יותר</small>`);
   window.scrollTo(0, 0);
 }
 
@@ -272,7 +315,7 @@ let Q = null;
 function startRound(mode) {
   const items = pickRound(mode);
   if (!items.length) return home();
-  Q = { mode, items: items.map(x => ({ ...x, retry: false })), i: 0, combo: 0, maxCombo: 0, firstOk: 0, firstN: 0, earned: 0, ups: [] };
+  Q = { mode, items: items.map(x => ({ ...x, retry: false })), i: 0, combo: 0, maxCombo: 0, firstOk: 0, firstN: 0, earned: 0, ups: [], coin0: S.coins };
   ask();
 }
 
@@ -280,14 +323,16 @@ function ask() {
   const it = Q.items[Q.i];
   const lvl = subLevel(it.tp, it.t.sub);
   const q = build(it.t, lvl);
-  const kind = q.tap ? 'tap' : q.steps ? 'order' : 'mc';
-  Q.cur = { q, kind, hinted: false, answered: false, picked: [] };
+  const kind = q.tap ? 'tap' : q.steps ? 'order' : q.chain ? 'chain' : 'mc';
+  Q.cur = { q, kind, hinted: false, answered: false, picked: [], miss: false, j: 0 };
   const total = Q.items.length;
   let body = '';
   if (kind === 'mc') {
     const order = R.shuffle(q.opts.map((_, i) => i));
     body = `${q.fig ? `<div class="figbox">${q.fig}</div>` : ''}
       <div class="opts ${q.opts.length === 2 ? 'two' : ''}">${order.map(i => `<button class="opt" data-i="${i}">${q.opts[i]}</button>`).join('')}</div>`;
+  } else if (kind === 'chain') {
+    body = `${q.fig ? `<div class="figbox">${q.fig}</div>` : ''}<div class="hwexpr" id="hwexpr"></div><div id="cstep"></div>`;
   } else if (kind === 'tap') {
     body = `<div class="figbox tapfig">${q.fig}</div><p class="how">👆 גע בשרטוט</p>`;
   } else {
@@ -303,7 +348,7 @@ function ask() {
       <div class="bar prog"><i style="width:${100 * Q.i / total}%"></i></div>
       <span class="combo ${Q.combo >= 3 ? 'hot' : ''}">${Q.combo >= 2 ? '⚡' + Q.combo : ''}</span>
     </header>
-    <div class="tag">${it.tp.icon} ${it.tp.subs.find(s => s.id === it.t.sub).name} · רמה ${lvl}${it.retry ? ' · <b>עוד ניסיון</b>' : ''}</div>
+    <div class="tag">${it.tp.icon} ${kind === 'chain' ? '✏️ תרגיל בשלבים · ' : ''}${it.tp.subs.find(s => s.id === it.t.sub).name} · רמה ${lvl}${it.retry ? ' · <b>עוד ניסיון</b>' : ''}</div>
     <h2 class="question">${q.q}</h2>
     ${body}
     <div class="under"><button class="hint" id="hint">💡 רמז</button></div>
@@ -349,11 +394,48 @@ function ask() {
     if (Q.cur.answered) return;
     Q.cur.hinted = true;
     const sub = it.tp.subs.find(s => s.id === it.t.sub);
-    const tip = q.hint || sub.tip;
+    const tip = (kind === 'chain' && q.chain[Q.cur.j].hint) || q.hint || sub.tip;
     $('#hint').outerHTML = `<div class="hintbox">💡 ${/[א-ת]/.test(tip) ? tip : M(tip)}</div>`;
   };
   $('#quit').onclick = () => { if (confirm('לצאת מהסבב? ההתקדמות בסבב הזה לא תיחשב למשימה היומית.')) home(); };
+  if (kind === 'chain') chainStep(0);
   window.scrollTo(0, 0);
+}
+
+// One step of a step-by-step exercise. The box above shows the expression as it looks so far.
+function chainStep(j, again = false) {
+  const q = Q.cur.q, st = q.chain[j], item = { expr: q.expr, steps: q.chain }, box = $('#hwexpr');
+  Q.cur.j = j;
+  box.classList.remove('moved');
+  box.innerHTML = hwExpr(item, hwState(item, j));
+  const order = R.shuffle(st.opts.map((_, k) => k));
+  $('#cstep').innerHTML = `
+    <div class="stepno">שלב ${j + 1} מתוך ${q.chain.length}${again ? ' · עוד ניסיון' : ''}</div>
+    <h3 class="sq">${st.q}</h3>
+    <div class="opts">${order.map(k => `<button class="opt" data-i="${k}">${ltr(st.opts[k])}</button>`).join('')}</div>
+    <div id="sfb"></div>`;
+  $('#cstep').querySelectorAll('.opt').forEach(b => b.onclick = () => {
+    const ok = +b.dataset.i === 0, last = j === q.chain.length - 1;
+    $('#cstep').querySelectorAll('.opt').forEach(x => { x.disabled = true; });
+    b.classList.add(ok ? 'right' : 'wrong');
+    if (ok) {
+      Snd.ok();
+      const c = again ? 0 : earn(1);
+      msToast(work());
+      if (st.after) { box.innerHTML = hwExpr(item, st.after); box.classList.add('moved'); }
+      if (last) return answer(!Q.cur.miss, box);
+      $('#sfb').innerHTML = `<div class="fb ok mini"><div class="fbhead"><b>✅ נכון!</b>${c ? `<span class="gain">+${c} 🪙</span>` : ''}</div>
+        <p>${st.explain}</p><button class="next" id="snext">לשלב הבא ←</button></div>`;
+      $('#snext').onclick = () => chainStep(j + 1);
+    } else {
+      Snd.bad(); if (navigator.vibrate) navigator.vibrate(60);
+      Q.cur.miss = true;
+      $('#sfb').innerHTML = `<div class="fb bad mini"><div class="fbhead"><b>עוד לא. הנה רמז גדול:</b></div>
+        <p>${st.explain}</p><button class="next" id="snext">לנסות שוב</button></div>`;
+      $('#snext').onclick = () => chainStep(j, true);
+    }
+    setTimeout(() => $('#sfb') && $('#sfb').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  });
 }
 
 // A subtopic moves up a level (up to 3) after 7 of its last 8 first-try answers were right without a hint.
@@ -407,22 +489,26 @@ function answer(ok, el) {
   }
   if (up) { gain += 5; Q.ups.push(up); }
   S.stars += gain; Q.earned += gain;
+  const chain = Q.cur.kind === 'chain';
+  // A chain earned its coins step by step; finishing it without a mistake adds 3 more.
+  const coins = !ok ? 0 : chain ? earn(3) : earn(it.retry || Q.cur.hinted ? 1 : 2);
+  if (!chain) msToast(work());
   save();
   const rule = q.rule && (/[א-ת]/.test(q.rule) ? q.rule : M(q.rule));
   const praise = R.pick(['נכון!', 'מעולה!', 'בדיוק!', 'יפה מאוד!', 'צדקת!']);
   const upBox = up ? `<div class="levelup">⬆️ <b>עלית לרמה ${up.lvl} ב${up.name}!</b><small>מעכשיו יופיעו שם שאלות קצת יותר מאתגרות. +5 ⭐</small></div>` : '';
   $('#fb').innerHTML = upBox + (ok ? `
     <div class="fb ok">
-      <div class="fbhead"><b>✅ ${praise}</b>${gain ? `<span class="gain">+${gain} ⭐${gain > 1 && !up ? ' בונוס רצף!' : ''}</span>` : ''}</div>
+      <div class="fbhead"><b>✅ ${chain ? 'פתרת את כל התרגיל!' : praise}</b><span class="gain">${gain ? `+${gain} ⭐${gain > 1 && !up ? ' בונוס רצף!' : ''} ` : ''}${coins ? `+${coins} 🪙` : ''}</span></div>
       ${rule ? `<div class="rule">${rule}</div>` : ''}
       <details><summary>למה?</summary><p>${q.explain}</p></details>
       <button class="next" id="next">הבא ←</button>
     </div>` : `
     <div class="fb bad">
-      <div class="fbhead"><b>לא הפעם. הנה ההסבר:</b></div>
+      <div class="fbhead"><b>${chain ? 'סיימת את התרגיל, עם טעות בדרך. הנה כל הדרך:' : 'לא הפעם. הנה ההסבר:'}</b></div>
       <p>${q.explain}</p>
       ${rule ? `<div class="rule">📌 ${rule}</div>` : ''}
-      ${it.retry ? '' : '<small>שאלה דומה תחזור בסוף הסבב.</small>'}
+      ${it.retry ? '' : `<small>${chain ? 'תרגיל דומה, עם מספרים אחרים, יחזור בסוף הסבב.' : 'שאלה דומה תחזור בסוף הסבב.'}</small>`}
       <button class="next" id="next">הבנתי ←</button>
     </div>`);
   if (up) { Snd.win(); burst(['⬆️', '⭐', '✨'], 18); }
@@ -441,6 +527,8 @@ function finish() {
   if (perfect) { S.perfects++; bonus += 5; }
   if (firstToday) bonus += 3;
   S.stars += bonus; Q.earned += bonus;
+  earn(5, 'סיום סבב');
+  if (perfect) earn(10, 'סבב מושלם');
   const st = streak();
   let shieldMsg = '';
   if (firstToday && st > 0 && st % 7 === 0 && S.shields < 2) { S.shields++; shieldMsg = 'קיבלת מגן רצף 🛡️: אם תפספס יום, הוא ישמור על הרצף.'; }
@@ -454,13 +542,13 @@ function finish() {
       <div class="big">${perfect ? '💎' : pct >= 75 ? '🏆' : pct >= 50 ? '💪' : '🌱'}</div>
       <h2>${perfect ? 'סבב מושלם!' : pct >= 75 ? 'עבודה מצוינת!' : pct >= 50 ? 'כל הכבוד, ממשיכים!' : 'למדת דברים חדשים היום!'}</h2>
       <p class="score">${Q.firstOk} מתוך ${Q.firstN} נכונות מהפעם הראשונה</p>
-      <div class="earn">+${Q.earned} ⭐</div>
+      <div class="earn">+${Q.earned} ⭐ · +${S.coins - Q.coin0} 🪙</div>
       ${firstToday ? `<div class="card streak done end-streak"><div class="flame pop">🔥<span>${st}</span></div><div class="streak-text"><b>${st} ${st === 1 ? 'יום' : 'ימים'} ברצף!</b><span>המשימה של היום בוצעה. +3 ⭐ על היום</span>${shieldMsg ? `<span class="shield">${shieldMsg}</span>` : ''}</div></div>` : ''}
       ${Q.ups.map(u => `<div class="newtrophy up"><span>⬆️</span><div><small>עלית רמה!</small><b>${u.name}: רמה ${u.lvl}</b></div></div>`).join('')}
       ${got.map(x => `<div class="newtrophy"><span>${x.ic}</span><div><small>גביע חדש!</small><b>${x.name}</b></div></div>`).join('')}
       <div class="endbtns">
         <button class="next" id="again">עוד סבב ⭐</button>
-        <p class="more">אפשר להמשיך להתאמן כמה שרוצים, וכל תשובה נכונה מוסיפה כוכבים.</p>
+        <p class="more">אפשר להמשיך להתאמן כמה שרוצים. כל שלב נכון מוסיף מטבעות, ועכשיו כל מטבע שווה ×${mult()} בזכות הרצף.</p>
         <button class="ghost" id="home">למסך הבית</button>
       </div>
     </section>`;
@@ -512,7 +600,7 @@ function sheetView(hw) {
   const solo = () => S.sheet[hw.id] || {};
   const count = id => Object.keys(solo()).filter(k => k.startsWith(id + '-')).length;
   app.innerHTML = backBar('✍️ מה פתרתי לבד בדף') + `
-    <p class="hwintro">סמן כל תרגיל שפתרת <b>לבד</b> בדף, בלי עזרה. על כל סימון מקבלים ⭐. סימנת בטעות? לוחצים שוב.</p>
+    <p class="hwintro">סמן כל תרגיל שפתרת <b>לבד</b> בדף, בלי עזרה. על כל סימון מקבלים ⭐ ו-2 🪙. סימנת בטעות? לוחצים שוב.</p>
     <div class="card sheettotal"><b id="tot">${Object.keys(solo()).length}</b> מתוך ${sheetTotal(hw)} תרגילים</div>
     ${hw.sheet.map(sec => `
       <h3 class="hwsec">${sec.name} <small>${sec.pages} · <span id="c-${sec.id}">${count(sec.id)}</span>/${sec.count}</small></h3>
@@ -521,9 +609,9 @@ function sheetView(hw) {
     <button class="ghost" id="tolist">לתרגילים המודרכים</button>`;
   app.querySelectorAll('.chipn').forEach(b => b.onclick = () => {
     const k = b.dataset.k, cur = { ...solo() };
-    if (cur[k]) { delete cur[k]; S.stars = Math.max(0, S.stars - 1); b.classList.remove('on'); }
+    if (cur[k]) { delete cur[k]; S.stars = Math.max(0, S.stars - 1); S.coins = Math.max(0, S.coins - 2); b.classList.remove('on'); }
     else {
-      cur[k] = today(); S.stars++; b.classList.add('on'); Snd.ok();
+      cur[k] = today(); S.stars++; S.coins += 2; b.classList.add('on'); Snd.ok();
       if (Object.keys(cur).length % 10 === 0) burst(['⭐', '✍️', '✨']);
     }
     S.sheet[hw.id] = cur;
@@ -559,13 +647,14 @@ function hwRun(hw, item, i = 0, firstTry = true) {
     const ok = +b.dataset.i === 0;
     app.querySelectorAll('.opt').forEach(x => { x.disabled = true; });
     b.classList.add(ok ? 'right' : 'wrong');
+    let c = 0;
     if (ok) {
-      Snd.ok(); if (firstTry) { S.stars++; save(); }
+      Snd.ok(); if (firstTry) { S.stars++; c = earn(1); msToast(work()); save(); }
       if (st.after) { const e = $('#hwexpr'); e.innerHTML = hwExpr(item, st.after); e.classList.add('moved'); }
     }
     else { Snd.bad(); if (navigator.vibrate) navigator.vibrate(60); }
     $('#fb').innerHTML = ok ? `
-      <div class="fb ok"><div class="fbhead"><b>✅ נכון!</b>${firstTry ? '<span class="gain">+1 ⭐</span>' : ''}</div>
+      <div class="fb ok"><div class="fbhead"><b>✅ נכון!</b>${firstTry ? `<span class="gain">+1 ⭐ +${c} 🪙</span>` : ''}</div>
         <p>${st.explain}</p><button class="next" id="next">הלאה ←</button></div>` : `
       <div class="fb bad"><div class="fbhead"><b>עוד לא. הנה רמז גדול:</b></div>
         <p>${st.explain}</p><button class="next" id="next">לנסות שוב</button></div>`;
@@ -597,7 +686,7 @@ function hwWrite(hw, item) {
     S.hw[hw.id] = { ...(S.hw[hw.id] || {}), [item.n]: today() };
     let msg = '';
     if (first) {
-      S.stars += 3;
+      S.stars += 3; earn(5, 'תרגיל מודרך');
       const t = today(), c = (S.hwDay[t] || 0) + 1;
       S.hwDay[t] = c;
       // Three homework exercises in a day count as the daily task.
@@ -641,6 +730,62 @@ function rules() {
   bindBack();
 }
 
+// ---------- coins: wallet and shop ----------
+const fmtD = k => `<span dir="ltr">${k.slice(5).split('-').reverse().join('/')}</span>`;
+const SHOP = [
+  { id: 'shield', ic: '🛡️', name: 'מגן רצף', desc: 'שומר על הרצף אם מפספסים יום (עד 2)', price: 150 },
+  { id: 'th-sunset', ic: '🌅', name: 'ערכת צבעים: שקיעה', price: 250, theme: 'sunset' },
+  { id: 'th-ocean', ic: '🌊', name: 'ערכת צבעים: אוקיינוס', price: 250, theme: 'ocean' },
+  { id: 'th-candy', ic: '🍬', name: 'ערכת צבעים: סוכריה', price: 250, theme: 'candy' },
+  { id: 'gift', ic: '🎁', name: 'פרס מההורים', desc: 'פודים, מראים את המסך להורים ומקבלים פרס', price: 600 },
+];
+const applyTheme = () => { document.documentElement.dataset.theme = S.theme || ''; };
+
+function wallet(msg = '') {
+  const st = streak(), t = today(), td = (S.coinDays[t] || {}).n || 0;
+  const btn = it => {
+    if (it.theme && S.owned[it.id]) return S.theme === it.theme ? '<button class="buy on" disabled>פעיל ✓</button>' : `<button class="buy" data-use="${it.theme}">להפעיל</button>`;
+    const off = S.coins < it.price || (it.id === 'shield' && S.shields >= 2);
+    return `<button class="buy" data-buy="${it.id}" ${off ? 'disabled' : ''}>${it.price} 🪙</button>`;
+  };
+  app.innerHTML = backBar('🪙 הקופה שלי') + `
+    ${msg}
+    <section class="card walletcard"><div class="big">🪙</div><div><b class="bal">${S.coins}</b><small>מטבעות</small></div></section>
+    <section class="card multcard"><b>בונוס רצף ×${mult()}</b>
+      <small>${st} ${st === 1 ? 'יום' : 'ימים'} ברצף. כל יום ברצף מוסיף ×0.1 לכל מטבע, עד ×2.</small>
+      <div class="bar"><i style="width:${Math.round((mult() - 1) * 100)}%"></i></div></section>
+    <p class="hwintro">היום: <b>${td} 🪙</b> · ${S.work[t] || 0} תרגילים ושלבים</p>
+    <h3>איך מרוויחים?</h3>
+    <ul class="earnlist">
+      <li>👋 כניסה יומית: ${5 + 3 * Math.min(st, 10)} 🪙, וגדל עם כל יום ברצף</li>
+      <li>✏️ כל שלב נכון בתרגיל: 1, ותרגיל שלם בלי טעות: עוד 3</li>
+      <li>✅ שאלה מהירה נכונה: 2</li>
+      <li>🏁 סיום סבב: 5, וסבב מושלם: עוד 10</li>
+      <li>🎉 10 / 25 / 50 / 100 תרגילים ושלבים ביום: בונוס 10 / 20 / 40 / 80</li>
+      <li>🔥 על הכול: בונוס רצף ×${mult()}</li>
+    </ul>
+    <h3>חנות</h3>
+    <div class="shop">${SHOP.map(it => `<div class="shopitem"><span class="ic">${it.ic}</span><div><b>${it.name}</b>${it.desc ? `<small>${it.desc}</small>` : ''}</div>${btn(it)}</div>`).join('')}
+      ${S.theme ? '<div class="shopitem"><span class="ic">🎨</span><div><b>צבעים רגילים</b></div><button class="buy" data-use="">להפעיל</button></div>' : ''}</div>
+    ${S.redeems.length ? `<h3>פרסים שפדית</h3><ul class="recent">${S.redeems.map(r => `<li>🎁 פרס מההורים (${r.n} 🪙) <small>${fmtD(r.d)}</small></li>`).join('')}</ul>` : ''}
+    ${S.coinLog.length ? `<h3>אחרונים</h3><ul class="recent">${S.coinLog.slice(0, 8).map(x => `<li>${x.why} <b dir="ltr">${x.n > 0 ? '+' : ''}${x.n} 🪙</b> <small>${fmtD(x.d)}</small></li>`).join('')}</ul>` : ''}`;
+  app.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => {
+    const it = SHOP.find(x => x.id === b.dataset.buy);
+    if (S.coins < it.price) return;
+    if (it.id === 'gift' && !confirm(`לפדות ${it.price} מטבעות לפרס מההורים?`)) return;
+    S.coins -= it.price;
+    S.coinLog.unshift({ d: today(), n: -it.price, why: it.name }); S.coinLog = S.coinLog.slice(0, 40);
+    let note = '';
+    if (it.id === 'shield') { S.shields++; note = 'קיבלת מגן רצף 🛡️'; }
+    else if (it.theme) { S.owned[it.id] = today(); S.theme = it.theme; applyTheme(); note = 'ערכת הצבעים החדשה פעילה 🎨'; }
+    else { S.redeems.unshift({ d: today(), n: it.price }); note = '<b>🎁 פדית פרס!</b> הראה את המסך הזה להורים.'; }
+    save(); Snd.win(); burst(['🪙', '✨', it.ic]);
+    wallet(`<div class="toast">${note}</div>`);
+  });
+  app.querySelectorAll('[data-use]').forEach(b => b.onclick = () => { S.theme = b.dataset.use; applyTheme(); save(); wallet(); });
+  bindBack();
+}
+
 function status() {
   const t = today();
   const last = n => Array.from({ length: n }, (_, i) => S.days[shift(t, -i)]).filter(Boolean);
@@ -663,7 +808,10 @@ function status() {
       <div><b>${activeDays}</b><small>ימי תרגול</small></div>
       <div><b>${S.rounds}</b><small>סבבים</small></div>
       <div><b>${acc7 == null ? '–' : acc7 + '%'}</b><small>נכונות השבוע</small></div>
+      <div><b>${S.coins}</b><small>🪙 מטבעות</small></div>
+      <div><b>${Array.from({ length: 7 }, (_, i) => S.work[shift(t, -i)] || 0).reduce((a, b) => a + b, 0)}</b><small>שלבים ותרגילים השבוע</small></div>
     </section>
+    ${S.redeems.length ? `<p class="note">🎁 פרסים שנפדו: ${S.redeems.map(r => `${fmtD(r.d)} (${r.n} 🪙)`).join(' · ')}</p>` : ''}
     <h3>4 השבועות האחרונים</h3>
     <div class="cal">${cal}</div>
     <p class="legend"><i class="on"></i> תרגל <i class="fz"></i> מגן רצף <i></i> לא תרגל</p>
@@ -678,5 +826,6 @@ function status() {
   bindBack();
 }
 
+applyTheme();
 home();
 if ('serviceWorker' in navigator && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register('sw.js').catch(() => {});

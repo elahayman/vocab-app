@@ -13,6 +13,10 @@
   --violet: #7c3aed;
   color-scheme: light;
 }
+/* colour themes bought with coins */
+:root[data-theme="sunset"] { --bg: #fff4ec; --edge: #f7d2bb; --teal: #c2410c; --teal-2: #fb923c; --violet: #db2777; }
+:root[data-theme="ocean"] { --bg: #eef5ff; --edge: #c5d9f3; --teal: #1d4ed8; --teal-2: #38bdf8; --violet: #4f46e5; }
+:root[data-theme="candy"] { --bg: #fdf1f8; --edge: #f3c4de; --teal: #be185d; --teal-2: #f472b6; --violet: #9333ea; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: Rubik, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -231,3 +235,27 @@ h3 { margin: 18px 0 8px; font-size: 1.05rem; }
 .reveal { background: var(--card); border-radius: 14px; padding: 10px 14px; margin: 12px 0; text-align: right; }
 .reveal div { text-align: center; font-size: 1.25rem; margin-top: 8px; }
 .toast { background: #fef3c7; border-radius: 14px; padding: 10px 14px; margin-top: 8px; text-align: center; font-weight: 600; animation: pop .5s ease-out; }
+
+/* step-by-step exercises */
+.stepno { font-size: .85rem; color: var(--soft); margin-top: 10px; font-weight: 600; }
+.sq { margin: 4px 0 10px; font-size: 1.1rem; line-height: 1.5; }
+.fb.mini p { margin: 6px 0; }
+/* coins */
+.coins { background: #fef3c7; border-radius: 999px; padding: 6px 12px; font-weight: 800; box-shadow: 0 3px 0 #f5d48a; font-size: 1rem; margin-inline-start: auto; margin-inline-end: 8px; }
+.multline { display: block; font-size: .85rem; color: #b45309; font-weight: 600; }
+.cointoast { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); background: #fef3c7; border-radius: 16px; padding: 10px 16px; box-shadow: 0 6px 20px rgba(0,0,0,.15); z-index: 50; text-align: center; animation: pop .45s ease-out; max-width: 92vw; }
+.cointoast small { display: block; font-size: .8rem; opacity: .75; }
+.walletcard { display: flex; align-items: center; gap: 14px; justify-content: center; margin-top: 10px; }
+.walletcard .big { font-size: 3rem; }
+.walletcard .bal { font-size: 2.4rem; display: block; color: #b45309; }
+.multcard { margin-top: 10px; }
+.multcard small { display: block; margin: 4px 0 8px; color: var(--soft); }
+.earnlist { padding-inline-start: 18px; line-height: 1.8; margin: 4px 0; }
+.shop { display: grid; gap: 8px; }
+.shopitem { display: flex; align-items: center; gap: 12px; background: var(--card); border-radius: 14px; padding: 10px 12px; box-shadow: 0 3px 0 var(--edge); }
+.shopitem .ic { font-size: 1.8rem; }
+.shopitem div { flex: 1; }
+.shopitem small { display: block; color: var(--soft); font-size: .8rem; }
+.buy { background: var(--sun); color: #fff; font-weight: 800; border-radius: 12px; padding: 8px 12px; white-space: nowrap; }
+.buy:disabled { background: #d6d3d1; }
+.buy.on { background: var(--green); }
