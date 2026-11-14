@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>חזרה למבחן במדעים</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#2563eb">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap">
+<style>
+:root { --bg:#eef4ff; --card:#fff; --edge:#cdddf7; --ink:#14233d; --soft:#56688a; --blue:#2563eb; --blue2:#60a5fa; --green:#16a34a; --red:#dc2626; --sun:#f59e0b; color-scheme: light; }
+* { box-sizing: border-box; }
+html, body { margin:0; background:var(--bg); color:var(--ink); font-family:Rubik, system-ui, sans-serif; -webkit-tap-highlight-color:transparent; }
+button { font:inherit; color:inherit; border:0; background:none; cursor:pointer; padding:0; }
+#app { max-width:560px; margin:0 auto; min-height:100vh; padding:max(14px, env(safe-area-inset-top)) 16px 32px; }
+h1 { font-size:1.6rem; margin:8px 0 4px; }
+.sub { color:var(--soft); margin:0 0 18px; }
+.card { background:var(--card); border:2px solid var(--edge); border-radius:18px; padding:16px; margin-bottom:12px; }
+.big { display:block; width:100%; padding:16px; border-radius:16px; font-weight:800; font-size:1.15rem; background:var(--blue); color:#fff; box-shadow:0 4px 0 #1d4ed8; margin-bottom:10px; }
+.big:active { transform:translateY(2px); box-shadow:0 2px 0 #1d4ed8; }
+.big.alt { background:var(--sun); box-shadow:0 4px 0 #c27c06; }
+.big.ghost { background:#fff; color:var(--blue); border:2px solid var(--edge); box-shadow:none; }
+.big[disabled] { opacity:.45; cursor:default; }
+.topics { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.topic { background:#fff; border:2px solid var(--edge); border-radius:14px; padding:12px 10px; text-align:right; font-weight:600; }
+.topic small { display:block; color:var(--soft); font-weight:400; margin-top:4px; }
+.bar { height:10px; background:#dbe6f8; border-radius:99px; overflow:hidden; margin:6px 0 2px; }
+.bar i { display:block; height:100%; background:linear-gradient(90deg, var(--blue2), var(--blue)); border-radius:99px; transition:width .3s; }
+.top { display:flex; justify-content:space-between; align-items:center; gap:10px; color:var(--soft); font-weight:600; }
+.x { font-size:1.4rem; padding:4px 8px; }
+.tag { display:inline-block; background:#dbe6f8; color:var(--blue); border-radius:99px; padding:3px 10px; font-size:.85rem; font-weight:600; margin:12px 0 8px; }
+.q { font-size:1.3rem; font-weight:800; line-height:1.45; margin:0 0 14px; }
+.opt { display:block; width:100%; text-align:right; background:#fff; border:2px solid var(--edge); border-radius:14px; padding:14px; margin-bottom:9px; font-size:1.05rem; line-height:1.4; }
+.opt.ok { border-color:var(--green); background:#e8f8ee; }
+.opt.bad { border-color:var(--red); background:#fdecec; }
+.opt.dim { opacity:.55; }
+.fb { border-radius:14px; padding:14px; margin:6px 0 12px; line-height:1.5; }
+.fb.ok { background:#e8f8ee; border:2px solid #a7e3bd; }
+.fb.bad { background:#fff4e5; border:2px solid #fbd38d; }
+.fb b { display:block; font-size:1.1rem; margin-bottom:4px; }
+.score { text-align:center; font-size:3rem; font-weight:800; margin:10px 0 0; }
+.center { text-align:center; }
+.streak { color:var(--sun); font-weight:800; }
+.pop { animation:pop .35s ease; }
+@keyframes pop { 0%{transform:scale(.96)} 60%{transform:scale(1.03)} 100%{transform:scale(1)} }
+.list li { margin-bottom:8px; line-height:1.4; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script src="questions.js"></script>
+<script>
+(function () {
+  const app = document.getElementById('app');
+  const KEY = 'science-quiz-v1';
+  const ROUND = 15;
+  const Q = window.QUESTIONS.map((q, i) => ({ id: i, topic: q[0], text: q[1], right: q[2], wrong: q[3], why: q[4] }));
+  let S = { last: {} }; // id -> true (last answer right) / false (last answer wrong)
+  try { S = Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+  const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const mastered = (list) => list.filter((q) => S.last[q.id] === true).length;
+  const mistakes = () => Q.filter((q) => S.last[q.id] === false);
+  const PRAISE = ['מעולה!', 'נכון!', 'יפה מאוד!', 'בול!', 'אלוף!', 'צודק!'];
+
+  let run = null; // { title, items, i, right, wrongs, streak, answered }
+
+  function home() {
+    const m = mastered(Q), miss = mistakes().length;
+    let h = '<h1>🔬 חזרה למבחן במדעים</h1><p class="sub">שאלות אמריקאיות. לוחצים, רואים אם צדקת, וממשיכים.</p>';
+    h += '<div class="card"><div class="top"><span>יודע כבר</span><span>' + m + ' / ' + Q.length + '</span></div><div class="bar"><i style="width:' + (100 * m / Q.length) + '%"></i></div></div>';
+    h += '<button class="big" data-go="mix">▶ סבב של ' + ROUND + ' שאלות מכל הנושאים</button>';
+    h += '<button class="big alt" data-go="miss"' + (miss ? '' : ' disabled') + '>🔁 תרגול הטעויות שלי (' + miss + ')</button>';
+    h += '<button class="big ghost" data-go="new">✨ שאלות שעוד לא ענית עליהן נכון</button>';
+    h += '<p class="sub" style="margin:16px 0 8px">או לפי נושא:</p><div class="topics">';
+    for (const t in window.TOPICS) {
+      const list = Q.filter((q) => q.topic === t);
+      h += '<button class="topic" data-topic="' + t + '">' + window.TOPICS[t] + '<small>' + mastered(list) + ' / ' + list.length + ' ✓</small></button>';
+    }
+    h += '</div><p class="center" style="margin-top:22px"><button class="sub" data-go="all" style="text-decoration:underline">כל ' + Q.length + ' השאלות ברצף</button></p>';
+    app.innerHTML = h;
+    app.querySelectorAll('[data-go]').forEach((b) => b.onclick = () => {
+      const g = b.dataset.go;
+      if (g === 'mix') start('סבב מעורב', pickMix());
+      if (g === 'miss') start('תרגול טעויות', shuffle(mistakes()));
+      if (g === 'all') start('כל השאלות', shuffle(Q));
+      if (g === 'new') { const fresh = Q.filter((q) => S.last[q.id] !== true); start('שאלות חדשות', shuffle(fresh.length ? fresh : Q).slice(0, ROUND)); }
+    });
+    app.querySelectorAll('[data-topic]').forEach((b) => b.onclick = () => start(window.TOPICS[b.dataset.topic], shuffle(Q.filter((q) => q.topic === b.dataset.topic))));
+  }
+
+  // A mixed round prefers questions not yet answered right, then fills with the rest.
+  function pickMix() {
+    const notYet = shuffle(Q.filter((q) => S.last[q.id] !== true));
+    const done = shuffle(Q.filter((q) => S.last[q.id] === true));
+    return notYet.concat(done).slice(0, ROUND).sort(() => Math.random() - 0.5);
+  }
+
+  function start(title, items) {
+    if (!items.length) return home();
+    run = { title, items, i: 0, right: 0, wrongs: [], streak: 0 };
+    ask();
+  }
+
+  function ask() {
+    const q = run.items[run.i];
+    const opts = shuffle([q.right].concat(q.wrong));
+    let h = '<div class="top"><button class="x" data-home aria-label="יציאה">✕</button><span>' + (run.i + 1) + ' / ' + run.items.length + '</span>' +
+      '<span class="streak">' + (run.streak >= 2 ? '🔥 ' + run.streak : '') + '</span></div>';
+    h += '<div class="bar"><i style="width:' + (100 * run.i / run.items.length) + '%"></i></div>';
+    h += '<span class="tag">' + window.TOPICS[q.topic] + '</span><p class="q">' + esc(q.text) + '</p>';
+    opts.forEach((o, k) => { h += '<button class="opt" data-k="' + k + '">' + esc(o) + '</button>'; });
+    h += '<div id="after"></div>';
+    app.innerHTML = h;
+    window.scrollTo(0, 0);
+    app.querySelector('[data-home]').onclick = home;
+    const btns = app.querySelectorAll('.opt');
+    btns.forEach((b) => b.onclick = () => {
+      if (run.answered) return;
+      run.answered = true;
+      const ok = opts[+b.dataset.k] === q.right;
+      btns.forEach((x) => {
+        const isRight = opts[+x.dataset.k] === q.right;
+        x.classList.add(isRight ? 'ok' : (x === b ? 'bad' : 'dim'));
+      });
+      S.last[q.id] = ok; save();
+      if (ok) { run.right++; run.streak++; } else { run.wrongs.push(q); run.streak = 0; }
+      const head = ok ? '✅ ' + PRAISE[Math.floor(Math.random() * PRAISE.length)] : '💡 לא נורא, התשובה הנכונה: ' + esc(q.right);
+      const last = run.i === run.items.length - 1;
+      document.getElementById('after').innerHTML = '<div class="fb pop ' + (ok ? 'ok' : 'bad') + '"><b>' + head + '</b>' + esc(q.why) + '</div>' +
+        '<button class="big" id="next">' + (last ? 'לתוצאות 🏁' : 'הבא ←') + '</button>';
+      const next = document.getElementById('next');
+      next.onclick = () => { run.answered = false; run.i++; run.i < run.items.length ? ask() : end(); };
+      next.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    });
+  }
+
+  function end() {
+    const n = run.items.length, pct = Math.round(100 * run.right / n);
+    const emoji = pct === 100 ? '🏆' : pct >= 80 ? '🌟' : pct >= 60 ? '👍' : '💪';
+    const msg = pct === 100 ? 'מושלם! אין טעויות בכלל.' : pct >= 80 ? 'מצוין! אתה מוכן.' : pct >= 60 ? 'יפה! עוד סבב קטן על הטעויות.' : 'כל טעות עכשיו היא נקודה שלא תאבד מחר. בוא נתרגל אותן.';
+    let h = '<div class="card center pop"><div style="font-size:3rem">' + emoji + '</div><p class="score">' + run.right + ' / ' + n + '</p><p class="sub">' + msg + '</p></div>';
+    if (run.wrongs.length) {
+      h += '<button class="big alt" id="retry">🔁 שוב רק על הטעויות (' + run.wrongs.length + ')</button>';
+      h += '<div class="card"><b>מה כדאי לזכור:</b><ul class="list">' + run.wrongs.map((q) => '<li>' + esc(q.text) + '<br><b style="color:var(--green)">' + esc(q.right) + '</b></li>').join('') + '</ul></div>';
+    }
+    h += '<button class="big" id="again">▶ סבב חדש</button><button class="big ghost" data-home>לתפריט</button>';
+    app.innerHTML = h;
+    window.scrollTo(0, 0);
+    const wr = run.wrongs.slice();
+    const r = document.getElementById('retry'); if (r) r.onclick = () => start('תרגול טעויות', shuffle(wr));
+    document.getElementById('again').onclick = () => start('סבב מעורב', pickMix());
+    app.querySelector('[data-home]').onclick = home;
+  }
+
+  home();
+})();
+</script>
+</body>
+</html>
