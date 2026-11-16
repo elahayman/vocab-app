@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>חזרה למבחן במדעים</title>
+<title>חזרה למבחן</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -46,20 +46,36 @@ h1 { font-size:1.6rem; margin:8px 0 4px; }
 .streak { color:var(--sun); font-weight:800; }
 .pop { animation:pop .35s ease; }
 @keyframes pop { 0%{transform:scale(.96)} 60%{transform:scale(1.03)} 100%{transform:scale(1)} }
+.tabs { display:flex; gap:8px; margin-bottom:6px; }
+.tab { flex:1; padding:10px; border-radius:12px; border:2px solid var(--edge); background:#fff; font-weight:600; }
+.tab.on { background:var(--blue); color:#fff; border-color:var(--blue); }
 .list li { margin-bottom:8px; line-height:1.4; }
 </style>
 </head>
 <body>
 <main id="app"></main>
+<script src="civics.js"></script>
 <script src="questions.js"></script>
 <script>
 (function () {
   const app = document.getElementById('app');
-  const KEY = 'science-quiz-v1';
   const ROUND = 15;
-  const Q = window.QUESTIONS.map((q, i) => ({ id: i, topic: q[0], text: q[1], right: q[2], wrong: q[3], why: q[4] }));
-  let S = { last: {} }; // id -> true (last answer right) / false (last answer wrong)
-  try { S = Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+  const SUBJ = window.SUBJECTS;
+  let cur, KEY, Q, TOPICS, S;
+  function load(name) {
+    cur = SUBJ[name] ? name : 'civics';
+    const sub = SUBJ[cur];
+    KEY = sub.key + '-quiz-v1';
+    TOPICS = sub.topics;
+    Q = sub.questions.map((q, i) => ({ id: i, topic: q[0], text: q[1], right: q[2], wrong: q[3], why: q[4] }));
+    S = { last: {} }; // id -> true (last answer right) / false (last answer wrong)
+    try { S = Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+    try { localStorage.setItem('quiz-subject', cur); } catch (e) {}
+    document.title = 'חזרה למבחן ב' + sub.title;
+  }
+  let first = 'civics';
+  try { first = localStorage.getItem('quiz-subject') || 'civics'; } catch (e) {}
+  load(first);
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
   const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -71,15 +87,16 @@ h1 { font-size:1.6rem; margin:8px 0 4px; }
 
   function home() {
     const m = mastered(Q), miss = mistakes().length;
-    let h = '<h1>🔬 חזרה למבחן במדעים</h1><p class="sub">שאלות אמריקאיות. לוחצים, רואים אם צדקת, וממשיכים.</p>';
+    let h = '<div class="tabs">' + Object.keys(SUBJ).map((k) => '<button class="tab' + (k === cur ? ' on' : '') + '" data-subj="' + k + '">' + SUBJ[k].emoji + ' ' + SUBJ[k].title + '</button>').join('') + '</div>';
+    h += '<h1>' + SUBJ[cur].emoji + ' חזרה למבחן ב' + SUBJ[cur].title + '</h1><p class="sub">שאלות אמריקאיות. לוחצים, רואים אם צדקת, וממשיכים.</p>';
     h += '<div class="card"><div class="top"><span>יודע כבר</span><span>' + m + ' / ' + Q.length + '</span></div><div class="bar"><i style="width:' + (100 * m / Q.length) + '%"></i></div></div>';
     h += '<button class="big" data-go="mix">▶ סבב של ' + ROUND + ' שאלות מכל הנושאים</button>';
     h += '<button class="big alt" data-go="miss"' + (miss ? '' : ' disabled') + '>🔁 תרגול הטעויות שלי (' + miss + ')</button>';
     h += '<button class="big ghost" data-go="new">✨ שאלות שעוד לא ענית עליהן נכון</button>';
     h += '<p class="sub" style="margin:16px 0 8px">או לפי נושא:</p><div class="topics">';
-    for (const t in window.TOPICS) {
+    for (const t in TOPICS) {
       const list = Q.filter((q) => q.topic === t);
-      h += '<button class="topic" data-topic="' + t + '">' + window.TOPICS[t] + '<small>' + mastered(list) + ' / ' + list.length + ' ✓</small></button>';
+      h += '<button class="topic" data-topic="' + t + '">' + TOPICS[t] + '<small>' + mastered(list) + ' / ' + list.length + ' ✓</small></button>';
     }
     h += '</div><p class="center" style="margin-top:22px"><button class="sub" data-go="all" style="text-decoration:underline">כל ' + Q.length + ' השאלות ברצף</button></p>';
     app.innerHTML = h;
@@ -90,7 +107,8 @@ h1 { font-size:1.6rem; margin:8px 0 4px; }
       if (g === 'all') start('כל השאלות', shuffle(Q));
       if (g === 'new') { const fresh = Q.filter((q) => S.last[q.id] !== true); start('שאלות חדשות', shuffle(fresh.length ? fresh : Q).slice(0, ROUND)); }
     });
-    app.querySelectorAll('[data-topic]').forEach((b) => b.onclick = () => start(window.TOPICS[b.dataset.topic], shuffle(Q.filter((q) => q.topic === b.dataset.topic))));
+    app.querySelectorAll('[data-subj]').forEach((b) => b.onclick = () => { load(b.dataset.subj); home(); });
+    app.querySelectorAll('[data-topic]').forEach((b) => b.onclick = () => start(TOPICS[b.dataset.topic], shuffle(Q.filter((q) => q.topic === b.dataset.topic))));
   }
 
   // A mixed round prefers questions not yet answered right, then fills with the rest.
@@ -112,7 +130,7 @@ h1 { font-size:1.6rem; margin:8px 0 4px; }
     let h = '<div class="top"><button class="x" data-home aria-label="יציאה">✕</button><span>' + (run.i + 1) + ' / ' + run.items.length + '</span>' +
       '<span class="streak">' + (run.streak >= 2 ? '🔥 ' + run.streak : '') + '</span></div>';
     h += '<div class="bar"><i style="width:' + (100 * run.i / run.items.length) + '%"></i></div>';
-    h += '<span class="tag">' + window.TOPICS[q.topic] + '</span><p class="q">' + esc(q.text) + '</p>';
+    h += '<span class="tag">' + TOPICS[q.topic] + '</span><p class="q">' + esc(q.text) + '</p>';
     opts.forEach((o, k) => { h += '<button class="opt" data-k="' + k + '">' + esc(o) + '</button>'; });
     h += '<div id="after"></div>';
     app.innerHTML = h;

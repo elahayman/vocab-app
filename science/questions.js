@@ -284,3 +284,6 @@ window.QUESTIONS = [
     ['האם האור משפיע על הפוטוסינתזה?', 'השפעת עוצמת האור על קצב הפוטוסינתזה', 'הצמח שבאור גדל יותר'],
     'השערה: "ככל ש... אז..." + הסבר מדעי (לפוטוסינתזה נדרשת אנרגיית אור).']
 ];
+
+window.SUBJECTS = window.SUBJECTS || {};
+window.SUBJECTS.science = { title: 'מדעים', emoji: '🔬', key: 'science', topics: window.TOPICS, questions: window.QUESTIONS };
