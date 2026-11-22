@@ -1682,33 +1682,24 @@
   function hebCard(day) {
     const hs = profile.heb;
     const done = hs && hs.day === day;
-    const known = hs ? Object.values(hs.w).filter((s) => s.lvl >= 3).length : 0;
+    const known = hs ? Object.keys(hs.w).filter((id) => HW[id] && hs.w[id].lvl >= 3).length : 0;
     return `<section class="card side-card heb-card">
       <div class="row-between"><h3>📚 עברית עשירה</h3><span class="muted small">${done ? '✓ היום' : `+${HEB_COINS} 🪙`}</span></div>
       <p class="muted small">${done ? `כל הכבוד! עוד סבב (רשות) מביא עוד מטבעות 🎲${known ? ` · ${known} מילים כבר ${g(profile, 'יודע', 'יודעת')}` : ''}`
-        : `${HEB_NEW} מילים גבוהות בעברית ביום, כמו שלומדים לפסיכומטרי. רשות, ומביא מטבעות.`}</p>
+        : `${HEB_NEW} מילים גבוהות בעברית ביום, ברמת פסיכומטרי. רשות, ומביא מטבעות.`}</p>
       <button class="btn ${done ? 'ghost' : 'primary'}" id="heb-go">${done ? 'עוד סבב · 🪙' : 'למילים של היום'}</button>
     </section>`;
   }
   function screenHebStart() {
-    const hs = hebState();
-    if (hs.track) { startHeb(); return; }
-    h(`
-      <main class="screen center">
-        <div class="big-emoji">📚</div>
-        <h2>עברית עשירה</h2>
-        <p class="muted">מכירים מילים כמו "תושייה" או "להפריך"? כל יום כמה מילים גבוהות, ואחר כך בוחן קצר. מאיזו רמה מתחילים?</p>
-        <button class="btn primary big" data-track="1">רגילה (כיתות ו׳-ז׳)</button>
-        <button class="btn primary big" data-track="2">גבוהה (כיתות ח׳-ט׳)</button>
-        <button class="btn ghost" id="back">חזרה</button>
-      </main>`);
-    on('[data-track]', 'click', (e) => { hs.track = +e.currentTarget.dataset.track; save(); startHeb(); });
-    on('#back', 'click', screenHome);
+    hebState();
+    startHeb();
   }
-  // The kid's level first, then the rest of the list.
+  // New words in a mixed order: a verb, an adjective, a noun, an expression, and so on.
   function hebOrder() {
-    const t = profile.heb.track || 1;
-    return HEB_IDS.filter((id) => HW[id].level === t).concat(HEB_IDS.filter((id) => HW[id].level !== t));
+    const groups = ['v', 'a', 'n', 'x'].map((pos) => HEB_IDS.filter((id) => HW[id].pos === pos));
+    const out = [];
+    for (let i = 0; groups.some((gr) => i < gr.length); i++) groups.forEach((gr) => { if (i < gr.length) out.push(gr[i]); });
+    return out;
   }
   function hebDistractors(id, n, key) {
     const w = HW[id];
@@ -1856,7 +1847,7 @@
     save();
     sfx.win();
     confetti();
-    const known = Object.values(hs.w).filter((s) => s.lvl >= 3).length;
+    const known = Object.keys(hs.w).filter((id) => HW[id] && hs.w[id].lvl >= 3).length;
     h(`
       <main class="screen center">
         ${surprise ? `<div class="milestone pop">${coins >= 5 ? `💰 בונוס ענק! ${coins} מטבעות` : `🎲 הפתעה! ${coins} מטבעות`}</div>` : ''}
@@ -2049,7 +2040,7 @@
             <div class="kv"><span>מילים מאתגרות שנחשף/ה אליהן</span><b>${st.complexSeen}</b></div>
             <div class="kv"><span>נותרו במאגר</span><b>${ALL_IDS.length - st.seen}</b></div>
             <div class="kv"><span>מטבעות</span><b>🪙 ${p.coins}</b></div>
-            ${p.heb ? `<div class="kv"><span>📚 עברית: מילים שנלמדו / כבר יודעים</span><b>${Object.keys(p.heb.w).length} / ${Object.values(p.heb.w).filter((s) => s.lvl >= 3).length}</b></div>` : ''}
+            ${p.heb ? `<div class="kv"><span>📚 עברית: מילים שנלמדו / כבר יודעים</span><b>${Object.keys(p.heb.w).filter((id) => HW[id]).length} / ${Object.keys(p.heb.w).filter((id) => HW[id] && p.heb.w[id].lvl >= 3).length}</b></div>` : ''}
             ${st.hard.length ? `<div class="hard"><b>מילים עקשניות:</b> <span dir="ltr">${st.hard.slice(0, 20).map((id) => esc(W[id].en)).join(', ')}</span></div>` : ''}
             ${focusCard(p, day)}
             <button class="link danger" data-del="${p.id}">מחיקת שחקן</button>
