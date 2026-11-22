@@ -50,53 +50,95 @@ h1 { font-size:1.6rem; margin:8px 0 4px; }
 .tab { flex:1; padding:10px; border-radius:12px; border:2px solid var(--edge); background:#fff; font-weight:600; }
 .tab.on { background:var(--blue); color:#fff; border-color:var(--blue); }
 .list li { margin-bottom:8px; line-height:1.4; }
+.kids { display:flex; gap:6px; justify-content:flex-start; margin-bottom:10px; }
+.kid { padding:6px 12px; border-radius:99px; border:2px solid var(--edge); background:#fff; font-weight:600; font-size:.95rem; color:var(--soft); }
+.kid.on { border-color:var(--sun); background:#fff7e6; color:var(--ink); }
+.stars { display:flex; justify-content:space-between; align-items:center; font-weight:800; }
+.stars .n { font-size:1.4rem; color:var(--sun); }
+.medal { font-size:1.6rem; }
+.step { position:relative; }
+.step .num { display:inline-grid; place-items:center; width:28px; height:28px; border-radius:50%; background:var(--green); color:#fff; font-weight:800; margin-left:8px; }
+.opt.placed { border-color:var(--green); background:#e8f8ee; cursor:default; }
+.opt.shake { animation:shake .35s; border-color:var(--red); }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.burst { position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:5; }
+.burst span { position:absolute; top:-40px; font-size:1.8rem; animation:fall 1.6s ease-in forwards; }
+@keyframes fall { to { transform:translateY(110vh) rotate(360deg); opacity:.2; } }
 </style>
 </head>
 <body>
 <main id="app"></main>
 <script src="civics.js"></script>
 <script src="questions.js"></script>
+<script src="energy.js"></script>
 <script>
 (function () {
   const app = document.getElementById('app');
-  const ROUND = 15;
   const SUBJ = window.SUBJECTS;
+  const KIDS = { eli: { name: 'אלי', emoji: '👦', fem: false }, lily: { name: 'לילי', emoji: '👧', fem: true } };
+  const kidOf = (k) => SUBJ[k].kid || 'eli';
+  let kid = 'eli';
+  try { kid = localStorage.getItem('quiz-kid') || 'eli'; } catch (e) {}
+  const urlKid = new URLSearchParams(location.search).get('kid');
+  if (KIDS[urlKid]) kid = urlKid;
+  if (!KIDS[kid]) kid = 'eli';
+  // Wording that changes with the kid: [boy, girl].
+  const g = (m, f) => (KIDS[kid].fem ? f : m);
+  let ROUND = 15;
   let cur, KEY, Q, TOPICS, S;
+  function setKid(k) {
+    kid = k;
+    try { localStorage.setItem('quiz-kid', kid); } catch (e) {}
+    let pick = null;
+    try { pick = localStorage.getItem('quiz-subject-' + kid); } catch (e) {}
+    if (!SUBJ[pick] || kidOf(pick) !== kid) pick = Object.keys(SUBJ).find((k2) => kidOf(k2) === kid);
+    load(pick);
+  }
   function load(name) {
     cur = SUBJ[name] ? name : 'civics';
     const sub = SUBJ[cur];
+    ROUND = sub.round || 15;
     KEY = sub.key + '-quiz-v1';
     TOPICS = sub.topics;
-    Q = sub.questions.map((q, i) => ({ id: i, topic: q[0], text: q[1], right: q[2], wrong: q[3], why: q[4] }));
-    S = { last: {} }; // id -> true (last answer right) / false (last answer wrong)
+    Q = sub.questions.map((q, i) => ({ id: i, topic: q[0], text: q[1], right: q[2], wrong: q[3], why: q[4], order: Array.isArray(q[2]) }));
+    S = { last: {}, stars: 0 }; // id -> true (last answer right) / false (last answer wrong)
     try { S = Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
-    try { localStorage.setItem('quiz-subject', cur); } catch (e) {}
+    try { localStorage.setItem('quiz-subject-' + kidOf(cur), cur); } catch (e) {}
     document.title = 'חזרה למבחן ב' + sub.title;
   }
-  let first = 'civics';
-  try { first = localStorage.getItem('quiz-subject') || 'civics'; } catch (e) {}
-  load(first);
+  // Eli's old saved subject (before kids were added) still counts as his.
+  try { if (!localStorage.getItem('quiz-subject-eli') && localStorage.getItem('quiz-subject')) localStorage.setItem('quiz-subject-eli', localStorage.getItem('quiz-subject')); } catch (e) {}
+  setKid(kid);
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
   const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const mastered = (list) => list.filter((q) => S.last[q.id] === true).length;
   const mistakes = () => Q.filter((q) => S.last[q.id] === false);
-  const PRAISE = ['מעולה!', 'נכון!', 'יפה מאוד!', 'בול!', 'אלוף!', 'צודק!'];
+  const PRAISE = () => ['מעולה!', 'נכון!', 'יפה מאוד!', 'בול!', g('אלוף!', 'אלופה!'), g('צודק!', 'צודקת!')];
+  const MEDALS = [[0, '🌱', 'מתחילים'], [20, '🥉', 'ארד'], [50, '🥈', 'כסף'], [100, '🥇', 'זהב'], [180, '🏆', 'גביע'], [300, '👑', 'כתר']];
+  const medal = (n) => MEDALS.filter((m) => n >= m[0]).pop();
+  const nextMedal = (n) => MEDALS.find((m) => m[0] > n);
 
   let run = null; // { title, items, i, right, wrongs, streak, answered }
 
   function home() {
     const m = mastered(Q), miss = mistakes().length;
-    let h = '<div class="tabs">' + Object.keys(SUBJ).map((k) => '<button class="tab' + (k === cur ? ' on' : '') + '" data-subj="' + k + '">' + SUBJ[k].emoji + ' ' + SUBJ[k].title + '</button>').join('') + '</div>';
-    h += '<h1>' + SUBJ[cur].emoji + ' חזרה למבחן ב' + SUBJ[cur].title + '</h1><p class="sub">שאלות אמריקאיות. לוחצים, רואים אם צדקת, וממשיכים.</p>';
-    h += '<div class="card"><div class="top"><span>יודע כבר</span><span>' + m + ' / ' + Q.length + '</span></div><div class="bar"><i style="width:' + (100 * m / Q.length) + '%"></i></div></div>';
+    let h = '<div class="kids">' + Object.keys(KIDS).map((k) => '<button class="kid' + (k === kid ? ' on' : '') + '" data-kid="' + k + '">' + KIDS[k].emoji + ' ' + KIDS[k].name + '</button>').join('') + '</div>';
+    const mine = Object.keys(SUBJ).filter((k) => kidOf(k) === kid);
+    if (mine.length > 1) h += '<div class="tabs">' + mine.map((k) => '<button class="tab' + (k === cur ? ' on' : '') + '" data-subj="' + k + '">' + SUBJ[k].emoji + ' ' + SUBJ[k].title + '</button>').join('') + '</div>';
+    h += '<h1>' + SUBJ[cur].emoji + ' חזרה למבחן ב' + SUBJ[cur].title + '</h1><p class="sub">שאלות אמריקאיות. לוחצים, רואים אם ' + g('צדקת', 'צדקת') + ', וממשיכים. כל תשובה נכונה = ⭐</p>';
+    h += '<div class="card"><div class="top"><span>' + g('יודע כבר', 'יודעת כבר') + '</span><span>' + m + ' / ' + Q.length + '</span></div><div class="bar"><i style="width:' + (100 * m / Q.length) + '%"></i></div></div>';
+    const st = S.stars || 0, md = medal(st), nx = nextMedal(st);
+    h += '<div class="card stars"><span><span class="medal">' + md[1] + '</span> ' + md[2] + '</span><span class="n">⭐ ' + st + '</span></div>';
+    if (nx) h += '<p class="sub" style="margin:-6px 0 14px;font-size:.9rem">עוד ' + (nx[0] - st) + ' ⭐ ל' + nx[1] + ' ' + nx[2] + '</p>';
     h += '<button class="big" data-go="mix">▶ סבב של ' + ROUND + ' שאלות מכל הנושאים</button>';
     h += '<button class="big alt" data-go="miss"' + (miss ? '' : ' disabled') + '>🔁 תרגול הטעויות שלי (' + miss + ')</button>';
     h += '<button class="big ghost" data-go="new">✨ שאלות שעוד לא ענית עליהן נכון</button>';
     h += '<p class="sub" style="margin:16px 0 8px">או לפי נושא:</p><div class="topics">';
     for (const t in TOPICS) {
       const list = Q.filter((q) => q.topic === t);
-      h += '<button class="topic" data-topic="' + t + '">' + TOPICS[t] + '<small>' + mastered(list) + ' / ' + list.length + ' ✓</small></button>';
+      const done = mastered(list) === list.length;
+      h += '<button class="topic" data-topic="' + t + '">' + (done ? '🏅 ' : '') + TOPICS[t] + '<small>' + mastered(list) + ' / ' + list.length + ' ✓</small></button>';
     }
     h += '</div><p class="center" style="margin-top:22px"><button class="sub" data-go="all" style="text-decoration:underline">כל ' + Q.length + ' השאלות ברצף</button></p>';
     app.innerHTML = h;
@@ -107,6 +149,7 @@ h1 { font-size:1.6rem; margin:8px 0 4px; }
       if (g === 'all') start('כל השאלות', shuffle(Q));
       if (g === 'new') { const fresh = Q.filter((q) => S.last[q.id] !== true); start('שאלות חדשות', shuffle(fresh.length ? fresh : Q).slice(0, ROUND)); }
     });
+    app.querySelectorAll('[data-kid]').forEach((b) => b.onclick = () => { setKid(b.dataset.kid); home(); });
     app.querySelectorAll('[data-subj]').forEach((b) => b.onclick = () => { load(b.dataset.subj); home(); });
     app.querySelectorAll('[data-topic]').forEach((b) => b.onclick = () => start(TOPICS[b.dataset.topic], shuffle(Q.filter((q) => q.topic === b.dataset.topic))));
   }
@@ -126,11 +169,9 @@ h1 { font-size:1.6rem; margin:8px 0 4px; }
 
   function ask() {
     const q = run.items[run.i];
+    if (q.order) return askOrder(q);
     const opts = shuffle([q.right].concat(q.wrong));
-    let h = '<div class="top"><button class="x" data-home aria-label="יציאה">✕</button><span>' + (run.i + 1) + ' / ' + run.items.length + '</span>' +
-      '<span class="streak">' + (run.streak >= 2 ? '🔥 ' + run.streak : '') + '</span></div>';
-    h += '<div class="bar"><i style="width:' + (100 * run.i / run.items.length) + '%"></i></div>';
-    h += '<span class="tag">' + TOPICS[q.topic] + '</span><p class="q">' + esc(q.text) + '</p>';
+    let h = header(q);
     opts.forEach((o, k) => { h += '<button class="opt" data-k="' + k + '">' + esc(o) + '</button>'; });
     h += '<div id="after"></div>';
     app.innerHTML = h;
@@ -145,30 +186,88 @@ h1 { font-size:1.6rem; margin:8px 0 4px; }
         const isRight = opts[+x.dataset.k] === q.right;
         x.classList.add(isRight ? 'ok' : (x === b ? 'bad' : 'dim'));
       });
-      S.last[q.id] = ok; save();
+      after(q, ok, esc(q.right));
+    });
+  }
+
+  function header(q) {
+    let h = '<div class="top"><button class="x" data-home aria-label="יציאה">✕</button><span>' + (run.i + 1) + ' / ' + run.items.length + '</span>' +
+      '<span class="streak">' + (run.streak >= 2 ? '🔥 ' + run.streak : '') + '</span></div>';
+    h += '<div class="bar"><i style="width:' + (100 * run.i / run.items.length) + '%"></i></div>';
+    return h + '<span class="tag">' + TOPICS[q.topic] + '</span><p class="q">' + esc(q.text) + '</p>';
+  }
+
+  // Ordering question: tap the steps in the right order. A wrong tap shakes; any wrong tap counts as a mistake.
+  function askOrder(q) {
+    const steps = q.right, opts = shuffle(steps.map((s, k) => k));
+    let h = header(q) + '<p class="sub" style="margin-top:-6px">' + g('לחץ', 'לחצי') + ' על השלבים לפי הסדר, מהראשון לאחרון.</p>';
+    opts.forEach((k) => { h += '<button class="opt step" data-k="' + k + '">' + esc(steps[k]) + '</button>'; });
+    h += '<div id="after"></div>';
+    app.innerHTML = h;
+    window.scrollTo(0, 0);
+    app.querySelector('[data-home]').onclick = home;
+    let nextIdx = 0, slips = 0;
+    app.querySelectorAll('.opt').forEach((b) => b.onclick = () => {
+      if (run.answered || b.classList.contains('placed')) return;
+      if (+b.dataset.k === nextIdx) {
+        b.classList.remove('shake'); b.classList.add('placed');
+        b.innerHTML = '<span class="num">' + (nextIdx + 1) + '</span>' + esc(steps[nextIdx]);
+        nextIdx++;
+        if (nextIdx === steps.length) {
+          run.answered = true;
+          after(q, slips === 0, '<br>' + steps.map((s, i) => (i + 1) + '. ' + esc(s)).join('<br>'), slips);
+        }
+      } else {
+        slips++;
+        b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+      }
+    });
+  }
+
+  function after(q, ok, rightHtml, slips) {
+      S.last[q.id] = ok;
+      if (ok) S.stars = (S.stars || 0) + 1;
+      save();
       if (ok) { run.right++; run.streak++; } else { run.wrongs.push(q); run.streak = 0; }
-      const head = ok ? '✅ ' + PRAISE[Math.floor(Math.random() * PRAISE.length)] : '💡 לא נורא, התשובה הנכונה: ' + esc(q.right);
+      if (ok && run.streak > 0 && run.streak % 5 === 0) burst(['🔥', '⭐']);
+      const praise = PRAISE();
+      const head = ok ? '✅ ' + praise[Math.floor(Math.random() * praise.length)] + ' +⭐'
+        : (slips ? '💡 ' + 'סידרת' + ' בסוף, אבל עם ' + slips + (slips === 1 ? ' טעות' : ' טעויות') + '. נתרגל את זה שוב. הסדר הנכון:' + rightHtml
+                 : '💡 לא נורא, התשובה הנכונה: ' + rightHtml);
       const last = run.i === run.items.length - 1;
       document.getElementById('after').innerHTML = '<div class="fb pop ' + (ok ? 'ok' : 'bad') + '"><b>' + head + '</b>' + esc(q.why) + '</div>' +
         '<button class="big" id="next">' + (last ? 'לתוצאות 🏁' : 'הבא ←') + '</button>';
       const next = document.getElementById('next');
       next.onclick = () => { run.answered = false; run.i++; run.i < run.items.length ? ask() : end(); };
       next.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    });
+  }
+
+  function burst(chars) {
+    const d = document.createElement('div'); d.className = 'burst';
+    for (let i = 0; i < 18; i++) {
+      const s = document.createElement('span');
+      s.textContent = chars[i % chars.length];
+      s.style.left = Math.random() * 100 + '%';
+      s.style.animationDelay = Math.random() * 0.5 + 's';
+      d.appendChild(s);
+    }
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 2400);
   }
 
   function end() {
     const n = run.items.length, pct = Math.round(100 * run.right / n);
     const emoji = pct === 100 ? '🏆' : pct >= 80 ? '🌟' : pct >= 60 ? '👍' : '💪';
-    const msg = pct === 100 ? 'מושלם! אין טעויות בכלל.' : pct >= 80 ? 'מצוין! אתה מוכן.' : pct >= 60 ? 'יפה! עוד סבב קטן על הטעויות.' : 'כל טעות עכשיו היא נקודה שלא תאבד מחר. בוא נתרגל אותן.';
-    let h = '<div class="card center pop"><div style="font-size:3rem">' + emoji + '</div><p class="score">' + run.right + ' / ' + n + '</p><p class="sub">' + msg + '</p></div>';
+    const msg = pct === 100 ? 'מושלם! אין טעויות בכלל.' : pct >= 80 ? g('מצוין! אתה מוכן.', 'מצוין! את מוכנה.') : pct >= 60 ? 'יפה! עוד סבב קטן על הטעויות.' : g('כל טעות עכשיו היא נקודה שלא תאבד מחר. בוא נתרגל אותן.', 'כל טעות עכשיו היא נקודה שלא תאבדי מחר. בואי נתרגל אותן.');
+    let h = '<div class="card center pop"><div style="font-size:3rem">' + emoji + '</div><p class="score">' + run.right + ' / ' + n + '</p><p class="sub">' + msg + '</p><p class="streak">+' + run.right + ' ⭐ &nbsp; (סך הכול ' + (S.stars || 0) + ')</p></div>';
     if (run.wrongs.length) {
       h += '<button class="big alt" id="retry">🔁 שוב רק על הטעויות (' + run.wrongs.length + ')</button>';
-      h += '<div class="card"><b>מה כדאי לזכור:</b><ul class="list">' + run.wrongs.map((q) => '<li>' + esc(q.text) + '<br><b style="color:var(--green)">' + esc(q.right) + '</b></li>').join('') + '</ul></div>';
+      h += '<div class="card"><b>מה כדאי לזכור:</b><ul class="list">' + run.wrongs.map((q) => '<li>' + esc(q.text) + '<br><b style="color:var(--green)">' + (q.order ? q.right.map(esc).join(' ← ') : esc(q.right)) + '</b></li>').join('') + '</ul></div>';
     }
     h += '<button class="big" id="again">▶ סבב חדש</button><button class="big ghost" data-home>לתפריט</button>';
     app.innerHTML = h;
     window.scrollTo(0, 0);
+    if (pct >= 80) burst(pct === 100 ? ['🏆', '⭐', '🎉'] : ['⭐', '🎉']);
     const wr = run.wrongs.slice();
     const r = document.getElementById('retry'); if (r) r.onclick = () => start('תרגול טעויות', shuffle(wr));
     document.getElementById('again').onclick = () => start('סבב מעורב', pickMix());
