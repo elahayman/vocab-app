@@ -133,6 +133,7 @@ h1 { font-size:1.6rem; margin:8px 0 4px; }
     if (nx) h += '<p class="sub" style="margin:-6px 0 14px;font-size:.9rem">עוד ' + (nx[0] - st) + ' ⭐ ל' + nx[1] + ' ' + nx[2] + '</p>';
     h += '<button class="big" data-go="mix">▶ סבב של ' + ROUND + ' שאלות מכל הנושאים</button>';
     h += '<button class="big alt" data-go="miss"' + (miss ? '' : ' disabled') + '>🔁 תרגול הטעויות שלי (' + miss + ')</button>';
+    if (Q.some((q) => q.order)) h += '<button class="big alt" data-go="order" style="background:var(--green);box-shadow:0 4px 0 #15803d">🔢 תרגול סידור השלבים</button>';
     h += '<button class="big ghost" data-go="new">✨ שאלות שעוד לא ענית עליהן נכון</button>';
     h += '<p class="sub" style="margin:16px 0 8px">או לפי נושא:</p><div class="topics">';
     for (const t in TOPICS) {
@@ -146,6 +147,7 @@ h1 { font-size:1.6rem; margin:8px 0 4px; }
       const g = b.dataset.go;
       if (g === 'mix') start('סבב מעורב', pickMix());
       if (g === 'miss') start('תרגול טעויות', shuffle(mistakes()));
+      if (g === 'order') start('סידור השלבים', shuffle(Q.filter((q) => q.order)));
       if (g === 'all') start('כל השאלות', shuffle(Q));
       if (g === 'new') { const fresh = Q.filter((q) => S.last[q.id] !== true); start('שאלות חדשות', shuffle(fresh.length ? fresh : Q).slice(0, ROUND)); }
     });
@@ -158,7 +160,11 @@ h1 { font-size:1.6rem; margin:8px 0 4px; }
   function pickMix() {
     const notYet = shuffle(Q.filter((q) => S.last[q.id] !== true));
     const done = shuffle(Q.filter((q) => S.last[q.id] === true));
-    return notYet.concat(done).slice(0, ROUND).sort(() => Math.random() - 0.5);
+    let r = notYet.concat(done).slice(0, ROUND);
+    // Every mixed round has at least one "put the steps in order" question.
+    const ord = Q.filter((q) => q.order);
+    if (ord.length && !r.some((q) => q.order)) r[r.length - 1] = shuffle(ord)[0];
+    return shuffle(r);
   }
 
   function start(title, items) {
