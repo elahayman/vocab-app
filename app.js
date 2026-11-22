@@ -119,6 +119,7 @@
   const HEB_NEW = 4;                 // new Hebrew words in the day's first round
   const HEB_EXTRA_NEW = 3;           // ...and in each extra round
   const HEB_REVIEWS = 8;
+  const HEB_MIN_SENTENCE = 2;        // sentence-completion questions in every Hebrew round, at least
   const HEB_COINS = 5;               // the day's first Hebrew round; extra rounds pay like English extra rounds
   const HEB_INTERVALS = [0, 1, 3, 7, 16, 35, 90];
   const HW = {};
@@ -1695,10 +1696,21 @@
     startHeb();
   }
   // New words in a mixed order: a verb, an adjective, a noun, an expression, and so on.
+  // Harder words (level 4) alternate with the main list, so every day has some of each.
   function hebOrder() {
-    const groups = ['v', 'a', 'n', 'x'].map((pos) => HEB_IDS.filter((id) => HW[id].pos === pos));
+    const mixed = (ids) => {
+      const groups = ['v', 'a', 'n', 'x'].map((pos) => ids.filter((id) => HW[id].pos === pos));
+      const out = [];
+      for (let i = 0; groups.some((gr) => i < gr.length); i++) groups.forEach((gr) => { if (i < gr.length) out.push(gr[i]); });
+      return out;
+    };
+    const base = mixed(HEB_IDS.filter((id) => HW[id].level < 4));
+    const hard = mixed(HEB_IDS.filter((id) => HW[id].level >= 4));
     const out = [];
-    for (let i = 0; groups.some((gr) => i < gr.length); i++) groups.forEach((gr) => { if (i < gr.length) out.push(gr[i]); });
+    for (let i = 0; i < Math.max(base.length, hard.length); i++) {
+      if (i < base.length) out.push(base[i]);
+      if (i < hard.length) out.push(hard[i]);
+    }
     return out;
   }
   function hebDistractors(id, n, key) {
@@ -1733,8 +1745,14 @@
       dialog({ text: 'סיימת את כל המילים בעברית שיש כרגע. מחר יחכו מילים לחזרה!', cancel: '' });
       return;
     }
-    const quiz = shuffle(fresh.map((id) => hebQuestion(id, 'meaning'))
-      .concat(reviews.map((id) => hebQuestion(id, hs.w[id].lvl >= 2 && Math.random() < 0.5 ? 'sentence' : 'meaning'))));
+    // Sentence completion in every round: half of the reviews, and at least HEB_MIN_SENTENCE questions
+    // (taking new words too when there are not enough reviews yet).
+    const sentenceIds = new Set(reviews.filter(() => Math.random() < 0.5));
+    for (const id of shuffle(reviews).concat(shuffle(fresh))) {
+      if (sentenceIds.size >= HEB_MIN_SENTENCE) break;
+      sentenceIds.add(id);
+    }
+    const quiz = shuffle(fresh.concat(reviews).map((id) => hebQuestion(id, sentenceIds.has(id) ? 'sentence' : 'meaning')));
     session = { heb: true, day, first, fresh, reviews, early, learnIdx: 0, revealed: false, quiz, qIdx: 0, firstTry: {}, retried: {}, right: 0, total: 0 };
     if (fresh.length) screenHebLearn(); else screenHebQuestion();
   }
