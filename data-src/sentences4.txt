@@ -422,3 +422,18 @@
 1705|The cat is chasing a little gray ___.
 1706|I eat a small ___ after school.
 1707|I brush my teeth ___ a day.
+1708|She is wearing a ___ dress.
+1709|The baby has a warm ___ every evening.
+1710|Please ___ your toys before dinner.
+1711|I take a ___ after football practice.
+1712|Wash your hands with ___ and water.
+1713|Don't forget to flush the ___.
+1714|Put some toothpaste on your ___.
+1715|Dry your hands with a clean ___.
+1716|I eat my cereal from a big ___.
+1717|After dinner I help wash the ___.
+1718|My socks are in the top ___.
+1719|Dad drinks his coffee from a big ___.
+1720|Put the milk back in the ___.
+1721|There is cold juice in the ___.
+1722|Mom cooks soup on the ___.

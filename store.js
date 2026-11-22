@@ -249,6 +249,8 @@
       saveDirty();
       flush();
     },
+    // True once the family's shared data came from the server (not only this device's copy).
+    hasRemoteShared() { return !!remoteShared; },
     saveShared(shared) {
       const d = read();
       d.shared = shared;

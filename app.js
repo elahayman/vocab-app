@@ -107,6 +107,25 @@
   const FOCUS_NEW = 6;               // test words taught per day (instead of the regular new words)
   const FOCUS_MAX_NEW = 10;          // ...or up to this many when the test is close
   const FOCUS_OLD = 8;               // test words already seen, asked again every day until the test
+  const FOCUS_SPELL_COINS = 1;       // per word spelled right in the test-words practice round
+  // Word lists from the kids' school books. The parent screen adds one to a kid's test list in one tap;
+  // a list with `kid` goes on that kid's test list by itself, once (matched by profile name).
+  const BOOK_LISTS = [
+    { key: 'lily-u1', title: 'ספר אנגלית Unit 1, חלקים 3-5', kid: /לילי|lily|lili/i,
+      words: ['comfortable', 'pretty', 'throw', 'bath', 'hang', 'put away', 'really', 'shower', 'soap', 'tidy', 'toilet',
+        'toothbrush', 'towel', 'bowl', 'dishes', 'drawer', 'fork', 'glass', 'knife', 'mug', 'plate', 'refrigerator', 'fridge', 'spoon', 'stove'] },
+  ];
+  // ---------- Hebrew corner: rich Hebrew words, optional, once a day for coins ----------
+  const HEB_NEW = 4;                 // new Hebrew words in the day's first round
+  const HEB_EXTRA_NEW = 3;           // ...and in each extra round
+  const HEB_REVIEWS = 8;
+  const HEB_COINS = 5;               // the day's first Hebrew round; extra rounds pay like English extra rounds
+  const HEB_INTERVALS = [0, 1, 3, 7, 16, 35, 90];
+  const HW = {};
+  const HEB_IDS = (window.HEB_WORDS || []).map(([id, word, meaning, sent, level, pos]) => {
+    HW[id] = { id, word, meaning, sent, level, pos };
+    return id;
+  });
   // Extra rounds pay a varying amount, so each one is a small surprise: [coins, chance].
   const EXTRA_REWARDS = [[5, 0.07], [2, 0.28], [1, 0.65]]; // about 1.5 coins a round on average
   const BY_CAT = {};
@@ -206,10 +225,31 @@
       data.profiles[id] = p;
     });
     applyDecisions();
+    applyBookLists();
     if (session || document.querySelector('.modal, .showcase')) return;
     if (view === 'home' && profile) screenHome();
     else if (view === 'profiles') screenProfiles();
   });
+
+  function bookIds(b) {
+    return b.words.map((en) => EN_INDEX[en]).filter(Boolean);
+  }
+  // A book list meant for one kid goes on their test list by itself, once. With sync this runs only
+  // after the family's data arrived, so a device with old data does not apply it again.
+  function applyBookLists() {
+    if (Store.family() && !(Store.hasRemoteShared && Store.hasRemoteShared())) return;
+    data.shared.booksDone = data.shared.booksDone || {};
+    BOOK_LISTS.forEach((b) => {
+      if (!b.kid || data.shared.booksDone[b.key]) return;
+      const p = Object.values(data.profiles).find((x) => b.kid.test(x.name || ''));
+      if (!p) return;
+      // The book words become the kid's test list; earlier test words stay in the regular reviews.
+      data.shared.focus[p.id] = { ids: bookIds(b), until: null };
+      data.shared.booksDone[b.key] = p.id;
+      Store.saveShared(data.shared);
+    });
+  }
+  applyBookLists();
 
   // ---------- Helpers ----------
   const $app = document.getElementById('app');
@@ -506,6 +546,7 @@
     const seen = new Set([w.he, w.en.toLowerCase()]);
     const out = [];
     for (const x of shuffle(pool)) {
+      if (W[x].he === w.he) continue;
       const key = mode === 'meaning' ? W[x].he : W[x].en.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
@@ -622,6 +663,29 @@
       day, fresh, reviews: ids, known: [], learnIdx: 0, revealed: false,
       quiz, qIdx: 0, firstTry: {}, retried: {}, combo: 0, bestCombo: 0, trophies: 0, right: 0, total: 0, complexRight: 0,
       bonus: true,
+    };
+  }
+
+  // Test-words practice, any time: a short quiz on the test list, then writing each word in English.
+  function buildFocusSession(day) {
+    const ids = focusOf(profile, day) || [];
+    const fresh = ids.filter((id) => !profile.words[id]).slice(0, 4);
+    const missed = (id) => (profile.words[id].ok === false ? 0 : 1);
+    // Words answered wrong last time come first, then the ones asked least recently.
+    const old = ids.filter((id) => profile.words[id])
+      .sort((a, b) => missed(a) - missed(b) || (profile.words[a].last || 0) - (profile.words[b].last || 0))
+      .slice(0, 8 - fresh.length);
+    const quiz = shuffle(fresh.map((id) => makeQuestion(id, 'meaning'))
+      .concat(old.map((id) => makeQuestion(id, pick(['meaning', 'reverse', 'sentence'])))));
+    markAsked(day, quiz);
+    // Writing: words not yet spelled right come first.
+    const spelled = (id) => (profile.words[id] && profile.words[id].spellOk ? 1 : 0);
+    const spellIds = shuffle(fresh.concat(old)).filter((id) => /^[a-z]+( [a-z]+)?$/i.test(W[id].en))
+      .sort((a, b) => spelled(a) - spelled(b)).slice(0, 5);
+    return {
+      day, fresh, reviews: old, known: [], learnIdx: 0, revealed: false,
+      quiz, qIdx: 0, firstTry: {}, retried: {}, combo: 0, bestCombo: 0, trophies: 0, right: 0, total: 0, complexRight: 0,
+      bonus: true, focusRound: true, spellIds,
     };
   }
 
@@ -943,6 +1007,14 @@
                <button class="btn primary big" id="start">יוצאים למשימה</button>`}
         </section>
 
+        ${focusOf(profile, day) ? `<section class="card side-card">
+          <div class="row-between"><h3>📝 המילים למבחן</h3><span class="muted small">${focusOf(profile, day).length} מילים</span></div>
+          <p class="muted small">מתי שרוצים: חזרה על המילים וכתיבה שלהן באנגלית. מטבעות על כל סבב 🪙</p>
+          <button class="btn ${doneToday ? 'primary' : 'ghost'}" id="focus-go">✍️ חזרה + כתיבה</button>
+        </section>` : ''}
+
+        ${HEB_IDS.length ? hebCard(day) : ''}
+
         ${news.length ? `<section class="card news pop">
           <h3>📣 חדש בעיר</h3>
           ${news.map((e) => `<p class="news-line">${data.profiles[e.by] ? avatar(data.profiles[e.by].avatar) : ''}<span>${feedText(e)}</span></p>`).join('')}
@@ -979,6 +1051,11 @@
     on('#switch', 'click', screenProfiles);
     on('#start', 'click', () => { session = buildSession(day); startLearn(); });
     on('#bonus', 'click', screenDone);
+    on('#focus-go', 'click', () => {
+      session = buildFocusSession(day);
+      if (session.quiz.length) startLearn(); else { session = null; screenHome(); }
+    });
+    on('#heb-go', 'click', screenHebStart);
     view = 'home';
     const seen = () => { profile.feedSeen = Date.now(); save(); screenHome(); };
     on('#news-ok', 'click', seen);
@@ -1058,7 +1135,11 @@
   function screenQuestion() {
     session.phase = 'quiz';
     if (session.qIdx >= session.quiz.length) {
-      if (!session.bonus && !session.spell) screenSpellOffer(); else finishSession();
+      if (session.focusRound && !session.spell) {
+        session.spell = { ids: session.spellIds, idx: 0, right: 0 };
+        screenSpell();
+      } else if (!session.bonus && !session.spell) screenSpellOffer();
+      else finishSession();
       return;
     }
     const q = session.quiz[session.qIdx];
@@ -1190,22 +1271,26 @@
     const sp = session.spell;
     if (sp.idx >= sp.ids.length) { finishSession(); return; }
     const w = W[sp.ids[sp.idx]];
-    const first = w.en[0];
-    const rest = w.en.length - 1;
+    const letters = w.en.replace(/ /g, '');
+    const first = letters[0];
+    const rest = letters.length - 1;
+    const per = session.focusRound ? FOCUS_SPELL_COINS : SPELL_COINS;
+    // A phrase like "put away": the space is shown as a gap, only the letters are typed.
+    const slotHtml = [...w.en.slice(1)].map((c) => (c === ' ' ? '<span class="slot gap"></span>' : '<span class="slot"></span>')).join('');
     // The word is typed straight into the letter slots: an invisible input sits on top of them.
     h(`
       <main class="screen">
-        <p class="tag">אתגר כתיב ${sp.idx + 1}/${sp.ids.length}</p>
+        <p class="tag">${session.focusRound ? '✍️ כותבים באנגלית' : 'אתגר כתיב'} ${sp.idx + 1}/${sp.ids.length}</p>
         <div class="card prompt"><div class="he big">${esc(w.he)}</div>
           <label class="slots" dir="ltr">
-            <span class="slot fixed">${esc(first)}</span>${'<span class="slot"></span>'.repeat(rest)}
+            <span class="slot fixed">${esc(first)}</span>${slotHtml}
             <input id="spell" maxlength="${rest}" dir="ltr" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="המשך המילה באנגלית">
           </label>
-          <div class="muted small">${w.en.length} אותיות · לוחצים על הקווים ומקלידים</div></div>
+          <div class="muted small">${letters.length} אותיות${w.en.includes(' ') ? ' (שתי מילים)' : ''} · לוחצים על הקווים ומקלידים</div></div>
         <div id="feedback"><button class="btn primary big" id="check">בדיקה</button></div>
       </main>`);
     const input = document.getElementById('spell');
-    const slots = [...document.querySelectorAll('.slot:not(.fixed)')];
+    const slots = [...document.querySelectorAll('.slot:not(.fixed):not(.gap)')];
     const paint = () => {
       input.value = input.value.replace(/[^a-z]/gi, '').slice(0, rest);
       slots.forEach((el, i) => {
@@ -1219,11 +1304,12 @@
     const check = () => {
       const typed = (first + input.value).trim().toLowerCase();
       if (typed.length < 2) { input.focus(); return; }
-      const target = w.en.toLowerCase();
+      const target = letters.toLowerCase();
       const dist = editDistance(typed, target);
       const ok = dist === 0 || (dist === 1 && target.length >= 5);
       input.disabled = true;
       const st = profile.words[w.id];
+      st.spellOk = ok;
       if (ok) {
         sp.right++;
         st.spell = (st.spell || 0) + 1;
@@ -1232,7 +1318,7 @@
         sfx.wrong();
       }
       speak(w.en);
-      document.getElementById('feedback').innerHTML = `<div class="fb ${ok ? 'good' : 'soft'}">${ok ? (dist ? 'כמעט מושלם! +' + SPELL_COINS + ' 🪙' : 'מושלם! +' + SPELL_COINS + ' 🪙') : 'לא נורא.'}
+      document.getElementById('feedback').innerHTML = `<div class="fb ${ok ? 'good' : 'soft'}">${ok ? (dist ? 'כמעט מושלם! +' + per + ' 🪙' : 'מושלם! +' + per + ' 🪙') : 'לא נורא.'}
           <div class="small">האיות: <b dir="ltr">${esc(w.en)}</b></div></div>
         <button class="btn primary big" id="next">המשך</button>`;
       on('#next', 'click', () => { sp.idx++; screenSpell(); });
@@ -1270,6 +1356,7 @@
       team = bumpWeekly(day);
     } else {
       ({ coins, surprise } = extraCoins());
+      if (session.focusRound && session.spell) coins += session.spell.right * FOCUS_SPELL_COINS;
       profile.coins += coins;
     }
     save();
@@ -1280,10 +1367,11 @@
       <main class="screen center">
         ${surprise ? `<div class="milestone pop">${coins >= 5 ? `💰 בונוס ענק! ${coins} מטבעות` : `🎲 הפתעה! ${coins} מטבעות`}</div>` : ''}
         ${milestone ? `<div class="milestone pop">🏆 ${milestone} ימים ברצף! +${MILESTONES[milestone]} 🪙</div>` : ''}
-        <h1>${session.bonus ? (session.fresh.length ? `למדת עוד ${session.fresh.length} מילים!` : 'האימון הנוסף הושלם') : pct >= 80 ? 'משימה הושלמה!' : pct >= 50 ? 'יפה מאוד!' : 'עבודה טובה!'}</h1>
+        <h1>${session.focusRound ? 'תרגול המילים למבחן הושלם!' : session.bonus ? (session.fresh.length ? `למדת עוד ${session.fresh.length} מילים!` : 'האימון הנוסף הושלם') : pct >= 80 ? 'משימה הושלמה!' : pct >= 50 ? 'יפה מאוד!' : 'עבודה טובה!'}</h1>
         <div class="summary card">
           <div><b>${session.right}/${session.total}</b><span>נכון בפעם הראשונה</span></div>
           <div><b>+${session.trophies}</b><span>🏆 גביעים</span></div>
+          ${session.focusRound && session.spell && session.spell.ids.length ? `<div><b>${session.spell.right}/${session.spell.ids.length}</b><span>✍️ כתיבה</span></div>` : ''}
           ${session.bonus && !coins ? '' : `<div><b>+${coins}</b><span>🪙 מטבעות</span></div>`}
         </div>
         ${session.bonus ? '' : `<p class="muted small">🔥 ${profile.streak} ימים ברצף</p>`}
@@ -1352,8 +1440,9 @@
       // An unopened chest is opened and placed automatically, never lost.
       if (chest && !opened) { openChest(); return; }
       if (chest && !placed) { place(data.shared.city.current); return; }
+      const focusRound = session.focusRound;
       session = null;
-      if (chest) screenCity(true); else screenDone();
+      if (chest) screenCity(true); else if (focusRound) screenHome(); else screenDone();
     });
   }
 
@@ -1584,6 +1673,207 @@
     on('#home', 'click', screenHome);
   }
 
+  // ---------- Hebrew corner ----------
+  // Rich Hebrew words, separate from the English mission: no streak, the day's first round pays HEB_COINS.
+  function hebState() {
+    profile.heb = profile.heb || { w: {}, day: null, track: null };
+    return profile.heb;
+  }
+  function hebCard(day) {
+    const hs = profile.heb;
+    const done = hs && hs.day === day;
+    const known = hs ? Object.values(hs.w).filter((s) => s.lvl >= 3).length : 0;
+    return `<section class="card side-card heb-card">
+      <div class="row-between"><h3>📚 עברית עשירה</h3><span class="muted small">${done ? '✓ היום' : `+${HEB_COINS} 🪙`}</span></div>
+      <p class="muted small">${done ? `כל הכבוד! עוד סבב (רשות) מביא עוד מטבעות 🎲${known ? ` · ${known} מילים כבר ${g(profile, 'יודע', 'יודעת')}` : ''}`
+        : `${HEB_NEW} מילים גבוהות בעברית ביום, כמו שלומדים לפסיכומטרי. רשות, ומביא מטבעות.`}</p>
+      <button class="btn ${done ? 'ghost' : 'primary'}" id="heb-go">${done ? 'עוד סבב · 🪙' : 'למילים של היום'}</button>
+    </section>`;
+  }
+  function screenHebStart() {
+    const hs = hebState();
+    if (hs.track) { startHeb(); return; }
+    h(`
+      <main class="screen center">
+        <div class="big-emoji">📚</div>
+        <h2>עברית עשירה</h2>
+        <p class="muted">מכירים מילים כמו "תושייה" או "להפריך"? כל יום כמה מילים גבוהות, ואחר כך בוחן קצר. מאיזו רמה מתחילים?</p>
+        <button class="btn primary big" data-track="1">רגילה (כיתות ו׳-ז׳)</button>
+        <button class="btn primary big" data-track="2">גבוהה (כיתות ח׳-ט׳)</button>
+        <button class="btn ghost" id="back">חזרה</button>
+      </main>`);
+    on('[data-track]', 'click', (e) => { hs.track = +e.currentTarget.dataset.track; save(); startHeb(); });
+    on('#back', 'click', screenHome);
+  }
+  // The kid's level first, then the rest of the list.
+  function hebOrder() {
+    const t = profile.heb.track || 1;
+    return HEB_IDS.filter((id) => HW[id].level === t).concat(HEB_IDS.filter((id) => HW[id].level !== t));
+  }
+  function hebDistractors(id, n, key) {
+    const w = HW[id];
+    const pool = shuffle(HEB_IDS.filter((x) => x !== id && HW[x].pos === w.pos));
+    const out = [];
+    const seen = new Set([w[key]]);
+    for (const x of pool) {
+      if (seen.has(HW[x][key])) continue;
+      seen.add(HW[x][key]);
+      out.push(x);
+      if (out.length >= n) break;
+    }
+    return out;
+  }
+  function hebQuestion(id, type) {
+    return { id, type, opts: shuffle([id, ...hebDistractors(id, 3, type === 'sentence' ? 'word' : 'meaning')]) };
+  }
+  function startHeb() {
+    const day = todayNum();
+    const hs = hebState();
+    const first = hs.day !== day;
+    const fresh = hebOrder().filter((id) => !hs.w[id]).slice(0, first ? HEB_NEW : HEB_EXTRA_NEW);
+    const seen = Object.keys(hs.w).map(Number).filter((id) => HW[id]);
+    let reviews = seen.filter((id) => hs.w[id].due <= day).sort((a, b) => hs.w[a].due - hs.w[b].due).slice(0, HEB_REVIEWS);
+    const early = [];
+    if (!first && reviews.length < 4) {
+      // Extra rounds: also words that are not due yet (practice only, they can demote but not promote).
+      shuffle(seen.filter((id) => !reviews.includes(id) && !fresh.includes(id))).slice(0, 5 - reviews.length).forEach((id) => { early.push(id); reviews.push(id); });
+    }
+    if (!fresh.length && !reviews.length) {
+      dialog({ text: 'סיימת את כל המילים בעברית שיש כרגע. מחר יחכו מילים לחזרה!', cancel: '' });
+      return;
+    }
+    const quiz = shuffle(fresh.map((id) => hebQuestion(id, 'meaning'))
+      .concat(reviews.map((id) => hebQuestion(id, hs.w[id].lvl >= 2 && Math.random() < 0.5 ? 'sentence' : 'meaning'))));
+    session = { heb: true, day, first, fresh, reviews, early, learnIdx: 0, revealed: false, quiz, qIdx: 0, firstTry: {}, retried: {}, right: 0, total: 0 };
+    if (fresh.length) screenHebLearn(); else screenHebQuestion();
+  }
+  function hebSentence(w, fill) {
+    return esc(w.sent).replace('___', fill ? `<b>${esc(w.word)}</b>` : '<span class="blank">____</span>');
+  }
+  function hebProgress() {
+    const total = session.fresh.length + session.quiz.length;
+    const done = (session.phase === 'quiz' ? session.fresh.length : session.learnIdx) + session.qIdx;
+    return `<div class="progress"><i style="width:${Math.round((done / Math.max(total, 1)) * 100)}%"></i></div>`;
+  }
+  function screenHebLearn() {
+    session.phase = 'learn';
+    const id = session.fresh[session.learnIdx];
+    const w = HW[id];
+    const shown = session.revealed;
+    h(`
+      <main class="screen">
+        <header class="qbar"><button class="x" id="quit" aria-label="יציאה">✕</button>${hebProgress()}</header>
+        <p class="tag">📚 מילה חדשה ${session.learnIdx + 1}/${session.fresh.length}</p>
+        <section class="card wordcard heb">
+          <div class="he-word">${esc(w.word)}</div>
+          ${shown
+            ? `<div class="he pop">${esc(w.meaning)}</div><div class="example">${hebSentence(w, true)}</div>`
+            : `<p class="muted guess">מכירים? חושבים רגע מה זה אומר, ואז מגלים.</p>`}
+        </section>
+        ${shown
+          ? `<button class="btn primary big" id="next">${session.learnIdx + 1 < session.fresh.length ? 'הבנתי, הבאה' : 'לבוחן!'}</button>`
+          : `<button class="btn primary big" id="reveal">גלה את הפירוש</button>`}
+      </main>`);
+    on('#quit', 'click', confirmQuit);
+    on('#reveal', 'click', () => { session.revealed = true; screenHebLearn(); });
+    on('#next', 'click', () => {
+      session.learnIdx++;
+      session.revealed = false;
+      if (session.learnIdx < session.fresh.length) screenHebLearn(); else screenHebQuestion();
+    });
+  }
+  function screenHebQuestion() {
+    session.phase = 'quiz';
+    if (session.qIdx >= session.quiz.length) { finishHeb(); return; }
+    const q = session.quiz[session.qIdx];
+    const w = HW[q.id];
+    const prompt = q.type === 'sentence'
+      ? `<p class="tag">איזו מילה מתאימה למשפט?</p><div class="card prompt"><div class="sentence">${hebSentence(w, false)}</div></div>`
+      : `<p class="tag">מה הפירוש?</p><div class="card prompt"><div class="he-word">${esc(w.word)}</div></div>`;
+    const options = q.opts.map((o) => `<button class="opt" data-id="${o}">${esc(q.type === 'sentence' ? HW[o].word : HW[o].meaning)}</button>`).join('');
+    h(`
+      <main class="screen">
+        <header class="qbar"><button class="x" id="quit" aria-label="יציאה">✕</button>${hebProgress()}</header>
+        ${prompt}
+        <div class="opts">${options}</div>
+        <div id="feedback"></div>
+      </main>`);
+    on('#quit', 'click', confirmQuit);
+    on('.opt', 'click', (e) => hebAnswer(q, +e.currentTarget.dataset.id, e.currentTarget));
+  }
+  function hebGrade(id, correct) {
+    const hs = profile.heb;
+    const s = hs.w[id] = hs.w[id] || { lvl: 0, due: session.day, right: 0, wrong: 0 };
+    if (correct) { s.right++; s.lvl = Math.min(HEB_INTERVALS.length - 1, Math.max(1, s.lvl + 1)); } else { s.wrong++; s.lvl = 1; }
+    s.due = session.day + HEB_INTERVALS[s.lvl];
+    s.last = session.day;
+  }
+  function hebAnswer(q, chosen, btn) {
+    const correct = chosen === q.id;
+    const first = !(q.id in session.firstTry);
+    document.querySelectorAll('.opt').forEach((b) => {
+      b.disabled = true;
+      if (+b.dataset.id === q.id) b.classList.add('right');
+    });
+    const w = HW[q.id];
+    const fb = document.getElementById('feedback');
+    const note = `<div class="small"><b>${esc(w.word)}</b> = ${esc(w.meaning)}</div>`;
+    if (correct) {
+      btn.classList.add('right', 'bounce');
+      sfx.right();
+      fb.innerHTML = `<div class="fb good">${pick(['מעולה!', 'בדיוק!', 'יפה מאוד!'])}${note}</div>`;
+    } else {
+      btn.classList.add('wrong', 'shake');
+      sfx.wrong();
+      fb.innerHTML = `<div class="fb soft">כמעט!${note}<div class="small">${hebSentence(w, true)}</div><div class="small">נחזור אליה עוד רגע</div></div>`;
+      if (!session.retried[q.id]) {
+        session.retried[q.id] = true;
+        session.quiz.push(hebQuestion(q.id, 'meaning'));
+      }
+    }
+    if (first) {
+      session.firstTry[q.id] = correct;
+      session.total++;
+      if (correct) session.right++;
+      // Words asked before they are due can be demoted but not promoted.
+      if (!session.early.includes(q.id) || !correct) hebGrade(q.id, correct);
+    }
+    const next = document.createElement('button');
+    next.className = 'btn primary big';
+    next.textContent = 'המשך';
+    next.addEventListener('click', () => { session.qIdx++; screenHebQuestion(); });
+    fb.appendChild(next);
+    setTimeout(() => next.focus(), 50);
+  }
+  function finishHeb() {
+    const hs = profile.heb;
+    let coins = HEB_COINS;
+    let surprise = false;
+    if (!session.first) ({ coins, surprise } = extraCoins());
+    hs.day = session.day;
+    profile.coins += coins;
+    profile.history[session.day] = (profile.history[session.day] || 0) + session.total;
+    save();
+    sfx.win();
+    confetti();
+    const known = Object.values(hs.w).filter((s) => s.lvl >= 3).length;
+    h(`
+      <main class="screen center">
+        ${surprise ? `<div class="milestone pop">${coins >= 5 ? `💰 בונוס ענק! ${coins} מטבעות` : `🎲 הפתעה! ${coins} מטבעות`}</div>` : ''}
+        <h1>${session.fresh.length ? `למדת ${session.fresh.length} מילים בעברית!` : 'סבב העברית הושלם!'}</h1>
+        <div class="summary card">
+          <div><b>${session.right}/${session.total}</b><span>נכון בפעם הראשונה</span></div>
+          <div><b>+${coins}</b><span>🪙 מטבעות</span></div>
+          <div><b>${known}</b><span>📚 מילים שכבר ידועות</span></div>
+        </div>
+        <button class="btn ghost" id="more">עוד סבב (רשות) · 🪙</button>
+        <button class="btn primary big" id="home">הביתה</button>
+      </main>`);
+    session = null;
+    on('#more', 'click', startHeb);
+    on('#home', 'click', screenHome);
+  }
+
   // ---------- Prize shop ----------
   function screenShop() {
     themeClass();
@@ -1691,6 +1981,7 @@
       <label class="small">יום המבחן (לא חובה) <input type="date" id="focus-until-${p.id}" value="${f && f.until ? dateOfDay(f.until) : ''}"></label>
       <div class="row-gap"><button class="btn primary sm" data-focus-save="${p.id}">שמירה</button>
         ${ids.length ? `<button class="btn ghost sm" data-focus-clear="${p.id}">ניקוי הרשימה</button>` : ''}</div>
+      ${BOOK_LISTS.filter((b) => bookIds(b).some((id) => !ids.includes(id))).map((b) => `<button class="btn ghost sm" data-book="${p.id}|${b.key}">➕ מילים מ${esc(b.title)}</button>`).join('')}
     </div>`;
   }
 
@@ -1758,6 +2049,7 @@
             <div class="kv"><span>מילים מאתגרות שנחשף/ה אליהן</span><b>${st.complexSeen}</b></div>
             <div class="kv"><span>נותרו במאגר</span><b>${ALL_IDS.length - st.seen}</b></div>
             <div class="kv"><span>מטבעות</span><b>🪙 ${p.coins}</b></div>
+            ${p.heb ? `<div class="kv"><span>📚 עברית: מילים שנלמדו / כבר יודעים</span><b>${Object.keys(p.heb.w).length} / ${Object.values(p.heb.w).filter((s) => s.lvl >= 3).length}</b></div>` : ''}
             ${st.hard.length ? `<div class="hard"><b>מילים עקשניות:</b> <span dir="ltr">${st.hard.slice(0, 20).map((id) => esc(W[id].en)).join(', ')}</span></div>` : ''}
             ${focusCard(p, day)}
             <button class="link danger" data-del="${p.id}">מחיקת שחקן</button>
@@ -1829,6 +2121,14 @@
       Store.saveProfile(p);
     });
     on('[data-focus-save]', 'click', (e) => saveFocus(e.currentTarget.dataset.focusSave));
+    on('[data-book]', 'click', (e) => {
+      const [pid, key] = e.currentTarget.dataset.book.split('|');
+      const b = BOOK_LISTS.find((x) => x.key === key);
+      const f = data.shared.focus[pid] || { ids: [], until: null };
+      data.shared.focus[pid] = { ids: [...new Set(f.ids.concat(bookIds(b)))], until: f.until || null };
+      Store.saveShared(data.shared);
+      screenParent();
+    });
     on('[data-focus-clear]', 'click', (e) => {
       delete data.shared.focus[e.currentTarget.dataset.focusClear];
       Store.saveShared(data.shared);
