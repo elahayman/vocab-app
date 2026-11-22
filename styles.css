@@ -397,3 +397,10 @@ body.theme-clean .slot { color: var(--ink); }
 .focus-edit h4 { margin: 0 0 6px; }
 .focus-edit textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; padding: 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--card, #fff); color: var(--ink); }
 .focus-edit label { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+
+/* Test-words practice & Hebrew corner */
+.side-card h3 { margin: 0; }
+.side-card .btn { width: 100%; margin-top: 8px; }
+.he-word { font-size: 38px; font-weight: 800; color: var(--ink); }
+.heb-card { border-inline-start: 5px solid var(--primary); }
+.slot.gap { width: 14px; border-bottom-color: transparent; }
