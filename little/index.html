@@ -136,6 +136,8 @@ button:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
 .pic.art .ground { position: absolute; left: 0; right: 0; bottom: 0; height: .05em; min-height: 3px; border-radius: 3px; background: var(--card-edge); }
 .cat .pic span { line-height: 1; }
 .pic.count { display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 2px; max-width: 90%; }
+.pic.count .digit { flex-basis: 100%; text-align: center; font-family: var(--display); font-weight: 800; font-size: 2.2em; line-height: 1; color: #2f80ed; margin-bottom: .05em; }
+.opt .pic.count .digit { font-size: 1.6em; }
 .blob { display: block; width: 68%; aspect-ratio: 1; border-radius: 48% 52% 45% 55% / 55% 45% 55% 45%; background: var(--c); box-shadow: inset -8px -10px 0 rgba(0,0,0,.12); }
 .blob.light { box-shadow: inset -8px -10px 0 rgba(0,0,0,.08), 0 0 0 3px #d7e3ef; }
 
@@ -847,7 +849,7 @@ function cone(scoops, top, size = 1) {
 function pic(w) {
   if (w.color) return `<span class="blob ${w.color === '#ffffff' ? 'light' : ''}" style="--c:${w.color}"></span>`;
   if (w.art) return `<span class="pic art">${w.art}</span>`;
-  if (w.count) return `<span class="pic count">${'🍓'.repeat(w.count)}</span>`;
+  if (w.count) return `<span class="pic count"><b class="digit">${w.count}</b>${'🍓'.repeat(w.count)}</span>`;
   return `<span class="pic">${w.e}</span>`;
 }
 
